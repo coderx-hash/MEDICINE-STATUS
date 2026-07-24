@@ -9,7 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
     <style>
         :root {
-            /* TACTICAL DARK THEME (DEFAULT) */
+            /* TACTICAL DARK THEME */
             --bg-base: #05090c;
             --bg-panel: #0d141b;
             --bg-input: #121c26;
@@ -60,17 +60,68 @@
                 linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
             background-size: 20px 20px;
             transition: all 0.3s ease;
-            padding-bottom: 120px; /* Space for bottom popouts */
+            padding-bottom: 120px;
+            overflow-x: hidden;
         }
 
-        /* TOP NAV & THEME TOGGLE */
+        /* BOOT-UP INTRO SCREEN (CENTERED) */
+        #bootScreen {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: #020405;
+            color: #00ff66;
+            font-family: var(--font-data);
+            font-size: 22px;
+            box-sizing: border-box;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            transition: opacity 0.5s ease-out;
+        }
+        #bootTextWrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        .boot-line { margin: 8px 0; opacity: 0; }
+        .cursor { display: inline-block; width: 12px; height: 22px; background-color: #00ff66; animation: blink 1s infinite; vertical-align: middle; margin-left: 5px; }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+
+        /* TOP NAV & CLOCK */
         .top-nav {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
             flex-wrap: wrap;
             gap: 15px;
+        }
+
+        .header-left {
+            display: flex;
+            flex-direction: column;
+        }
+
+        h2, h3 {
+            font-family: var(--font-header);
+            color: var(--text-bright);
+            margin: 0;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            display: flex;
+            align-items: center;
+        }
+        h2::before { content: "■"; color: var(--accent-cyan); margin-right: 10px; font-size: 18px; }
+
+        .system-clock {
+            font-family: var(--font-data);
+            color: var(--accent-gold);
+            font-size: 16px;
+            margin-top: 5px;
+            letter-spacing: 1px;
+            text-shadow: 0 0 5px rgba(255,184,0,0.3);
         }
 
         .theme-toggle {
@@ -88,18 +139,54 @@
         }
         .theme-toggle:hover { background: var(--accent-cyan); color: #fff; }
 
-        h2, h3 {
-            font-family: var(--font-header);
-            color: var(--text-bright);
-            margin: 0;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            display: flex;
-            align-items: center;
-        }
-        h2::before { content: "■"; color: var(--accent-cyan); margin-right: 10px; font-size: 18px; }
-
         .container { max-width: 1500px; margin: 0 auto; }
+
+        /* HUD WIDGETS (CLICKABLE) */
+        .hud-container {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .hud-box {
+            background: var(--bg-panel);
+            border: 1px solid var(--border-dim);
+            border-left: 4px solid var(--accent-cyan);
+            padding: 15px 20px;
+            border-radius: 4px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            display: flex;
+            flex-direction: column;
+            cursor: pointer; /* Makes it look clickable */
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .hud-box:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0, 240, 255, 0.3);
+        }
+        
+        .hud-box.alert { border-left-color: var(--accent-red); }
+        .hud-box.alert:hover { box-shadow: 0 8px 25px rgba(255, 42, 42, 0.3); }
+        
+        .hud-box.zones { border-left-color: var(--accent-gold); }
+        .hud-box.zones:hover { box-shadow: 0 8px 25px rgba(255, 184, 0, 0.3); }
+
+        .hud-title {
+            font-family: var(--font-header);
+            font-size: 12px;
+            color: var(--text-muted);
+            letter-spacing: 2px;
+            font-weight: bold;
+            pointer-events: none;
+        }
+        .hud-value {
+            font-family: var(--font-data);
+            font-size: 32px;
+            color: var(--text-bright);
+            margin-top: 5px;
+            pointer-events: none;
+        }
+        .hud-box.alert .hud-value { color: var(--accent-red); text-shadow: 0 0 10px rgba(255,42,42,0.4); }
 
         .card {
             background: var(--bg-panel);
@@ -150,7 +237,7 @@
             text-transform: uppercase;
             transition: all 0.3s ease;
             box-sizing: border-box;
-            -webkit-appearance: none; /* Better mobile rendering */
+            -webkit-appearance: none;
         }
 
         input:focus, select:focus {
@@ -188,21 +275,28 @@
             transition: all 0.2s;
             flex-grow: 1;
             text-align: center;
+            position: relative;
+            overflow: hidden;
         }
-        .btn:active { transform: scale(0.98); }
+        .btn:active { transform: scale(0.95); }
+        
+        /* Cyber Hover Effects */
+        .btn:hover {
+            box-shadow: 0 0 15px currentColor;
+            text-shadow: 0 0 5px currentColor;
+        }
         
         .btn-add { background-color: var(--accent-green); color: #000; }
+        .btn-add:hover { background-color: #00d655; color: #fff; }
+        
         .btn-export { background-color: var(--accent-cyan); color: #fff; }
         .btn-import { background-color: var(--accent-gold); color: #000; }
+        .btn-import:hover { background-color: #e6a600; color: #fff; }
+        
         .btn-clear { background-color: transparent; border: 1px solid var(--accent-red); color: var(--accent-red); }
         .btn-clear:hover { background-color: var(--accent-red); color: white; }
 
-        /* GRID FOR DESKTOP */
-        .dashboard-grid {
-            display: grid;
-            grid-template-columns: 2fr 1fr 1fr;
-            gap: 20px;
-        }
+        .dashboard-grid { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 20px; }
 
         .table-responsive {
             overflow-x: auto;
@@ -210,7 +304,7 @@
             overflow-y: auto;
             border: 1px solid var(--border-dim);
             background: var(--bg-input);
-            -webkit-overflow-scrolling: touch; /* Smooth mobile scroll */
+            -webkit-overflow-scrolling: touch;
         }
 
         table { width: 100%; border-collapse: collapse; white-space: nowrap; font-size: 13px; }
@@ -246,8 +340,8 @@
         }
         .tag-qty { font-weight: bold; color: var(--accent-gold); font-size: 14px; }
 
-        .delete-btn { background-color: transparent; color: var(--accent-red); border: 1px solid var(--accent-red); padding: 4px 8px; border-radius: 2px; cursor: pointer; font-size: 11px; font-weight: bold; }
-        .delete-btn:hover { background-color: var(--accent-red); color: white; }
+        .delete-btn { background-color: transparent; color: var(--accent-red); border: 1px solid var(--accent-red); padding: 4px 8px; border-radius: 2px; cursor: pointer; font-size: 11px; font-weight: bold; transition:0.2s;}
+        .delete-btn:hover { background-color: var(--accent-red); color: white; box-shadow: 0 0 10px var(--accent-red); }
 
         .summary-card { border-top: 3px solid var(--accent-cyan); }
         .global-summary-card { border-top: 3px solid var(--accent-gold); }
@@ -283,7 +377,9 @@
             color: #fff;
             flex: 1;
             text-align: center;
+            transition: 0.2s;
         }
+        .toast-btn:hover { transform: scale(1.05); }
 
         .toast-alert { background: var(--accent-red); }
         .toast-pending { background: var(--accent-cyan); animation-delay: 1s;}
@@ -307,28 +403,36 @@
             max-height: 85vh; overflow-y: auto;
         }
         .close-btn { color: var(--accent-red); float: right; font-size: 28px; font-weight: bold; cursor: pointer; margin-top:-10px;}
-        .close-btn:hover { color: #fff; }
+        .close-btn:hover { color: #fff; text-shadow: 0 0 10px var(--accent-red);}
 
         .alert-tag { background: var(--accent-red); color: white; padding: 2px 5px; border-radius: 2px; font-size: 10px; font-weight: bold; }
         .warning-tag { background: var(--accent-gold); color: black; padding: 2px 5px; border-radius: 2px; font-size: 10px; font-weight: bold; }
 
         /* MOBILE RESPONSIVENESS */
         @media (max-width: 1024px) {
+            .hud-container { grid-template-columns: 1fr; gap: 10px; }
             .dashboard-grid { grid-template-columns: 1fr; }
         }
-        
         @media (max-width: 768px) {
             body { padding: 10px; padding-bottom: 140px; }
             .top-nav { flex-direction: column; align-items: flex-start; }
             .form-grid { grid-template-columns: 1fr; }
             .floating-bar { flex-direction: column; gap: 10px; bottom: 10px; }
-            .toast-btn { font-size: 13px; padding: 10px; animation: none; } /* Disable bounce on mobile to save space/distraction */
+            .toast-btn { font-size: 13px; padding: 10px; animation: none; }
             h2 { font-size: 18px; }
             h3 { font-size: 16px; }
+            #bootScreen { font-size: 16px; padding: 20px; }
         }
     </style>
 </head>
 <body data-theme="dark">
+
+<!-- BOOT-UP SCREEN (CENTERED) -->
+<div id="bootScreen">
+    <div id="bootTextWrapper">
+        <!-- Lines will be injected here -->
+    </div>
+</div>
 
 <!-- Floating Pop-outs at the bottom -->
 <div class="floating-bar">
@@ -336,11 +440,11 @@
         ⚠️ MALAPIT NA MA-EXPIRED! CLICK THIS
     </button>
     <button class="toast-btn toast-pending" id="btnPendingToast" onclick="openModal('pendingModal')">
-        📦 GLOBAL PENDING (<span id="pendingCount">0</span>) CLICK THIS
+        📦 GLOBAL PENDING (<span id="pendingCountBtn">0</span>) CLICK THIS
     </button>
 </div>
 
-<!-- ALERT MODAL (Expiring) -->
+<!-- ALERT MODAL -->
 <div id="alertModal" class="modal">
     <div class="modal-content">
         <span class="close-btn" onclick="closeModal('alertModal')">&times;</span>
@@ -368,10 +472,48 @@
     </div>
 </div>
 
+<!-- ACTIVE ZONES MODAL -->
+<div id="zonesModal" class="modal">
+    <div class="modal-content">
+        <span class="close-btn" onclick="closeModal('zonesModal')">&times;</span>
+        <div class="card-header"><h2>📍 ACTIVE ZONES SUMMARY</h2></div>
+        <div class="table-responsive">
+            <table id="zonesTableModal">
+                <thead><tr><th>ZONE</th><th>ASSET</th><th>TOTAL</th><th>UNIT</th></tr></thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
 <div class="container">
     <div class="top-nav">
-        <h2>SYS-COM: MEDICINE OPS</h2>
+        <div class="header-left">
+            <h2>SYS-COM: MEDICINE OPS</h2>
+            <div class="system-clock" id="liveClock">Loading Time...</div>
+        </div>
         <button class="theme-toggle" onclick="toggleTheme()" id="themeBtn">🌞 SWITCH TO LIGHT MODE</button>
+    </div>
+
+    <!-- HUD WIDGETS (CLICKABLE) -->
+    <div class="hud-container">
+        <!-- Clicking this opens the Global Pending Modal -->
+        <div class="hud-box" onclick="openModal('pendingModal')" title="Click to view all pending assets">
+            <div class="hud-title">TOTAL ASSET QUANTITY</div>
+            <div class="hud-value" id="hudTotalQty">0</div>
+        </div>
+        
+        <!-- Clicking this opens the Alerts Modal -->
+        <div class="hud-box alert" onclick="openModal('alertModal')" title="Click to view critical expirations">
+            <div class="hud-title">CRITICAL ALERTS</div>
+            <div class="hud-value" id="hudAlerts">0</div>
+        </div>
+        
+        <!-- Clicking this opens the Zones Modal -->
+        <div class="hud-box zones" onclick="openModal('zonesModal')" title="Click to view Active Zones Summary">
+            <div class="hud-title">ACTIVE ZONES</div>
+            <div class="hud-value" id="hudZones">0</div>
+        </div>
     </div>
 
     <!-- Form Panel -->
@@ -396,7 +538,7 @@
                     <label>GOV BRANCH</label>
                     <div class="input-group">
                         <select id="government"></select>
-                        <button type="button" class="btn-opt" onclick="addCustomOption('government', 'govList', 'Enter new Government Branch (e.g., DSWD, LGU):')">+</button>
+                        <button type="button" class="btn-opt" onclick="addCustomOption('government', 'govList', 'Enter new Government Branch:')">+</button>
                         <button type="button" class="btn-opt btn-opt-del" onclick="deleteCustomOption('government', 'govList')">-</button>
                     </div>
                 </div>
@@ -414,7 +556,6 @@
                     <input type="text" id="processedBy" placeholder="Nag process" oninput="this.value = this.value.toUpperCase()" required>
                 </div>
                 
-                <!-- DOSAGE VALIDATION APPLIED HERE -->
                 <div>
                     <label>ASSET (MEDICINE w/ DOSAGE)</label>
                     <input type="text" id="medicine" placeholder="e.g. PARACETAMOL 500MG" oninput="this.value = this.value.toUpperCase()" required>
@@ -428,7 +569,7 @@
                     <label>UNIT</label>
                     <div class="input-group">
                         <select id="uom"></select>
-                        <button type="button" class="btn-opt" onclick="addCustomOption('uom', 'uomList', 'Enter new Unit (e.g. BOTTLE, PACK):')">+</button>
+                        <button type="button" class="btn-opt" onclick="addCustomOption('uom', 'uomList', 'Enter new Unit:')">+</button>
                         <button type="button" class="btn-opt btn-opt-del" onclick="deleteCustomOption('uom', 'uomList')">-</button>
                     </div>
                 </div>
@@ -442,7 +583,7 @@
                 <button type="button" class="btn btn-add" onclick="addData()">[+] INITIALIZE ENTRY</button>
                 <button type="button" class="btn btn-export" onclick="exportToExcel()">EXPORT REGISTRY</button>
                 <input type="file" id="fileInput" accept=".xlsx, .xls" style="display: none;" onchange="importExcel(event)">
-                <button type="button" class="btn btn-import" onclick="document.getElementById('fileInput').click()">IMPORT BATCH (EXCEL)</button>
+                <button type="button" class="btn btn-import" onclick="document.getElementById('fileInput').click()">IMPORT BATCH</button>
                 <button type="button" class="btn btn-clear" onclick="clearData()">PURGE</button>
             </div>
         </form>
@@ -473,7 +614,7 @@
         </div>
 
         <!-- 2. Location Based Summary -->
-        <div class="card summary-card">
+        <div class="card summary-card" id="summarySectionTitle">
             <div class="card-header"><h3>SUMMARY PER ZONE</h3></div>
             <div class="table-responsive">
                 <table class="summary-table" id="summaryTable">
@@ -492,9 +633,7 @@
 
         <!-- 3. Global Grand Total Summary -->
         <div class="card global-summary-card">
-            <div class="card-header">
-                <h3>GLOBAL SUMMARY</h3>
-            </div>
+            <div class="card-header"><h3>GLOBAL SUMMARY</h3></div>
             <div class="table-responsive">
                 <table class="summary-table" id="globalSummaryTable">
                     <thead>
@@ -513,6 +652,74 @@
 </div>
 
 <script>
+    // --- BOOT UP SEQUENCE ---
+    function runBootSequence() {
+        const lines = [
+            "> INITIALIZING SYS-COM...",
+            "> SECURING CONNECTION...",
+            "> LOADING MEDICINE ASSETS...",
+            "> SYSTEM CREATED BY GELO CUTLER...",
+            "> ACCESS GRANTED."
+        ];
+        
+        const wrapper = document.getElementById("bootTextWrapper");
+        const bootScreen = document.getElementById("bootScreen");
+        let delay = 0;
+
+        lines.forEach((line, index) => {
+            setTimeout(() => {
+                const el = document.createElement("div");
+                el.className = "boot-line";
+                wrapper.appendChild(el);
+                
+                // Add the blinking cursor to the current line
+                const cursor = document.createElement("span");
+                cursor.className = "cursor";
+                
+                typeWriter(el, line, 0, cursor, () => {
+                    if (index === lines.length - 1) {
+                        setTimeout(() => {
+                            bootScreen.style.opacity = "0";
+                            setTimeout(() => {
+                                bootScreen.style.display = "none";
+                                // Remove cursor from DOM so it doesn't linger invisibly
+                                wrapper.innerHTML = ""; 
+                            }, 500);
+                        }, 800);
+                    }
+                });
+            }, delay);
+            delay += (line.length * 20) + 400; // time typing + pause
+        });
+    }
+
+    function typeWriter(element, text, i, cursor, callback) {
+        if (i === 0) {
+            element.style.opacity = "1";
+            element.appendChild(cursor);
+        }
+        
+        if (i < text.length) {
+            // Insert character right before the cursor
+            const charNode = document.createTextNode(text.charAt(i));
+            element.insertBefore(charNode, cursor);
+            setTimeout(() => typeWriter(element, text, i + 1, cursor, callback), 20);
+        } else {
+            // Remove cursor from this line once done typing
+            if(cursor.parentNode) cursor.parentNode.removeChild(cursor);
+            if (callback) callback();
+        }
+    }
+
+    // --- LIVE CLOCK ---
+    function updateClock() {
+        const now = new Date();
+        const options = { month: 'long', day: 'numeric', year: 'numeric' };
+        let datePart = now.toLocaleDateString('en-US', options).toUpperCase();
+        let timePart = now.toLocaleTimeString('en-US');
+        document.getElementById('liveClock').innerText = `${datePart} | ${timePart}`;
+    }
+
     // --- THEME MANAGEMENT ---
     function toggleTheme() {
         const body = document.body;
@@ -600,7 +807,7 @@
 
         if (records.length === 0) {
             tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding: 30px;">NO ACTIVE ENTRIES DETECTED.</td></tr>';
-            checkAlerts();
+            checkAlertsAndUpdateHUD();
             return;
         }
 
@@ -670,22 +877,25 @@
             tbody.appendChild(tr);
         });
         
-        checkAlerts();
+        checkAlertsAndUpdateHUD();
     }
 
     function renderSummaryTables() {
         const locTbody = document.querySelector('#summaryTable tbody');
         const globalTbody = document.querySelector('#globalSummaryTable tbody');
         const modalTbody = document.querySelector('#pendingTableModal tbody');
+        const zonesModalTbody = document.querySelector('#zonesTableModal tbody');
         
         locTbody.innerHTML = '';
         globalTbody.innerHTML = '';
         modalTbody.innerHTML = '';
+        zonesModalTbody.innerHTML = '';
 
         if (records.length === 0) {
             locTbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">NO DATA</td></tr>';
             globalTbody.innerHTML = '<tr><td colspan="3" style="text-align:center;">NO DATA</td></tr>';
-            document.getElementById('pendingCount').innerText = "0";
+            zonesModalTbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">NO DATA</td></tr>';
+            document.getElementById('pendingCountBtn').innerText = "0";
             return;
         }
 
@@ -698,7 +908,6 @@
             const currentUom = (rec.uom || "").trim().toUpperCase();
             const qty = parseFloat(rec.quantity) || 0;
             
-            // 1. Map for Location Summary
             if (!summaryMap[loc]) summaryMap[loc] = {};
             if (!summaryMap[loc][medName]) {
                 summaryMap[loc][medName] = { uom: currentUom, totalQty: 0 };
@@ -710,7 +919,6 @@
             }
             summaryMap[loc][medName].totalQty += qty;
 
-            // 2. Map for Global Summary (All Branches Combined)
             if(!globalMedMap[medName]) {
                 globalMedMap[medName] = { totalQty: 0, uom: currentUom, locations: new Set() };
             } else {
@@ -723,48 +931,58 @@
             globalMedMap[medName].locations.add(loc);
         });
 
-        // Render Location Summary Table
+        // Render Zones Summary (Dashboard & Modal)
         Object.keys(summaryMap).sort().forEach(loc => {
             const medsList = Object.keys(summaryMap[loc]).sort();
             medsList.forEach((med, index) => {
                 const data = summaryMap[loc][med];
-                const tr = document.createElement('tr');
                 const locCell = index === 0 ? `<span class="tag-location">${loc}</span>` : `<span style="opacity: 0.1;">"</span>`;
-                tr.innerHTML = `<td>${locCell}</td><td><strong>${med}</strong></td><td><span class="tag-qty">${data.totalQty}</span></td><td>${data.uom}</td>`;
-                locTbody.appendChild(tr);
+                
+                // Add to Dashboard Table
+                const trDash = document.createElement('tr');
+                trDash.innerHTML = `<td>${locCell}</td><td><strong>${med}</strong></td><td><span class="tag-qty">${data.totalQty}</span></td><td>${data.uom}</td>`;
+                locTbody.appendChild(trDash);
+
+                // Add to Zones Modal Table
+                const trMod = document.createElement('tr');
+                trMod.innerHTML = `<td>${locCell}</td><td><strong style="color:var(--accent-cyan);">${med}</strong></td><td><span class="tag-qty" style="font-size:18px;">${data.totalQty}</span></td><td>${data.uom}</td>`;
+                zonesModalTbody.appendChild(trMod);
             });
         });
 
-        // Render Global Summary & Modal
         const allMeds = Object.keys(globalMedMap).sort();
-        document.getElementById('pendingCount').innerText = allMeds.length;
+        document.getElementById('pendingCountBtn').innerText = allMeds.length;
         
         allMeds.forEach(med => {
             const data = globalMedMap[med];
             const locsArr = Array.from(data.locations).sort();
             const locsStr = locsArr.map(l => `<span class="tag-location" style="font-size:9px; padding:2px 4px;">${l}</span>`).join(" ");
             
-            // Append to Dashboard Global Card
             const trGlobal = document.createElement('tr');
             trGlobal.innerHTML = `<td><strong>${med}</strong></td><td><span class="tag-qty">${data.totalQty}</span></td><td>${data.uom}</td>`;
             globalTbody.appendChild(trGlobal);
 
-            // Append to Pop-out Modal
             const trModal = document.createElement('tr');
             trModal.innerHTML = `<td><strong style="color:var(--accent-cyan);">${med}</strong></td><td><span class="tag-qty" style="font-size:18px;">${data.totalQty}</span></td><td>${data.uom}</td><td style="white-space:normal; min-width:150px;">${locsStr}</td>`;
             modalTbody.appendChild(trModal);
         });
     }
 
-    function checkAlerts() {
+    function checkAlertsAndUpdateHUD() {
         const tbody = document.querySelector('#alertTable tbody');
         tbody.innerHTML = '';
+        
         let alertCount = 0;
+        let totalAssetQty = 0;
+        let activeZonesSet = new Set();
         
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
         records.forEach(rec => {
+            totalAssetQty += (parseFloat(rec.quantity) || 0);
+            if(rec.location) activeZonesSet.add(rec.location.trim().toUpperCase());
+
             if (rec.glExpiry) {
                 const expDate = new Date(rec.glExpiry);
                 if (!isNaN(expDate.getTime())) {
@@ -780,23 +998,19 @@
             }
         });
 
+        // Update Clickable HUD
+        document.getElementById('hudTotalQty').innerText = totalAssetQty;
+        document.getElementById('hudAlerts').innerText = alertCount;
+        document.getElementById('hudZones').innerText = activeZonesSet.size;
+
         const toast = document.getElementById('btnAlertToast');
-        if (alertCount > 0) {
-            toast.style.display = 'flex';
-        } else {
-            toast.style.display = 'none';
-        }
+        if (alertCount > 0) toast.style.display = 'flex';
+        else toast.style.display = 'none';
     }
 
     function openModal(id) { document.getElementById(id).style.display = "block"; }
     function closeModal(id) { document.getElementById(id).style.display = "none"; }
-    
-    // Close modal if clicked outside
-    window.onclick = function(event) {
-        if (event.target.className === "modal") {
-            event.target.style.display = "none";
-        }
-    }
+    window.onclick = function(event) { if (event.target.className === "modal") event.target.style.display = "none"; }
 
     function addData() {
         const patientName = document.getElementById('patientName').value.trim().toUpperCase();
@@ -815,7 +1029,6 @@
             return;
         }
 
-        // STRICT DOSAGE VALIDATION
         const dosageRegex = /\b(MG|MCG|IU|G|ML|L|AMP|TAB|CAPS?|MEQ|M|KG|MM|CC|VIAL|BOX)\b/i;
         if (!dosageRegex.test(medicine)) {
             alert("⚠️ SYSTEM HALT: BAWAL MAG PROCEED! MEDICINE MUST INCLUDE DOSAGE (e.g. 500MG, 10MCG, 100IU, TAB, CAP, etc.)");
@@ -883,7 +1096,6 @@
             }
 
             let importedCount = 0;
-            const dosageRegex = /\b(MG|MCG|IU|G|ML|L|AMP|TAB|CAPS?|MEQ|M|KG|MM|CC|VIAL|BOX)\b/i;
 
             jsonData.forEach(row => {
                 const cleanRow = {};
@@ -894,9 +1106,6 @@
                 
                 if (!pName || !med) return;
                 
-                // Allow import to pass strict dosage check, or you can uncomment below to strictly filter excel imports too
-                // if(!dosageRegex.test(med)) return; 
-
                 const dateGL = cleanRow["DATE OF GL"] || cleanRow["DATE OF GURANTEE LETTER"] || "";
                 const dateExp = cleanRow["EXPIRATION OF GL"] || cleanRow["EXPARATION OF GURANTEE LETTER"] || "";
                 const gov = cleanRow["GOVERNMENT"] || "";
@@ -923,7 +1132,6 @@
 
                 if (!finalUom) finalUom = "UNIT";
 
-                // Automatically add imported locations, govs, and uoms to dropdown choices
                 let locOpt = JSON.parse(localStorage.getItem('locList'));
                 if(!locOpt.includes(loc.toUpperCase())) { locOpt.push(loc.toUpperCase()); localStorage.setItem('locList', JSON.stringify(locOpt)); }
                 
@@ -948,7 +1156,7 @@
 
             if (importedCount > 0) {
                 saveData();
-                loadSelect('location', 'locList'); // Refresh dropdowns
+                loadSelect('location', 'locList'); 
                 loadSelect('uom', 'uomList');
                 alert(`OPERATION SUCCESS: ${importedCount} ASSETS INTEGRATED.`);
             } else {
@@ -990,7 +1198,6 @@
             const medName = rec.medicine.trim().toUpperCase();
             const currentUom = rec.uom.trim().toUpperCase();
             
-            // Zone Summary logic
             if (!summaryMap[loc]) summaryMap[loc] = {};
             if (!summaryMap[loc][medName]) summaryMap[loc][medName] = { "MEDICINE": medName, "UOM": currentUom, "TOTAL QTY": 0 };
             else {
@@ -999,7 +1206,6 @@
             }
             summaryMap[loc][medName]["TOTAL QTY"] += parseFloat(rec.quantity) || 0;
 
-            // Global Summary Logic
             if (!globalMap[medName]) globalMap[medName] = { "MEDICINE": medName, "UOM": currentUom, "TOTAL QTY": 0 };
             else {
                 let existingUomArrayG = globalMap[medName]["UOM"].split(" / ");
@@ -1033,12 +1239,19 @@
         wsGlobal['!cols'] = [{wch: 35}, {wch: 20}, {wch: 15}];
         XLSX.utils.book_append_sheet(workbook, wsGlobal, "Global Grand Total");
 
-        const dateStr = new Date().toISOString().split('T')[0];
-        XLSX.writeFile(workbook, `Medic_Ops_Tracker_${dateStr}.xlsx`);
+        // Timestamp Logic for filename
+        const now = new Date();
+        const dateStr = now.toISOString().split('T')[0];
+        const timeStr = String(now.getHours()).padStart(2, '0') + String(now.getMinutes()).padStart(2, '0');
+        
+        XLSX.writeFile(workbook, `MED_OPS_LOG_${dateStr}_${timeStr}.xlsx`);
     }
 
     // INITIALIZATION
     window.onload = function() {
+        runBootSequence();
+        setInterval(updateClock, 1000);
+        updateClock();
         initOptions();
         renderMasterTable();
         renderSummaryTables();
