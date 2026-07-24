@@ -64,7 +64,7 @@
             overflow-x: hidden;
         }
 
-        /* BOOT-UP INTRO SCREEN (CENTERED) */
+        /* BOOT-UP INTRO SCREEN */
         #bootScreen {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -254,6 +254,7 @@
             letter-spacing: 1px;
             color: var(--accent-cyan);
             margin-bottom: 15px;
+            width: 100%;
         }
         .search-bar::placeholder { color: var(--text-muted); }
         .search-bar:focus { box-shadow: 0 0 15px var(--shadow-btn); }
@@ -278,9 +279,6 @@
         .btn-purge-exp { background-color: transparent; border: 1px solid var(--accent-gold); color: var(--accent-gold); }
         .btn-purge-exp:hover { background-color: var(--accent-gold); color: #000; }
 
-        /* GRID LAYOUTS FOR SECTIONS */
-        .dashboard-top-row { display: grid; grid-template-columns: 2.5fr 1fr; gap: 20px; margin-bottom: 20px; }
-        
         .table-responsive { overflow-x: auto; max-height: 500px; overflow-y: auto; border: 1px solid var(--border-dim); background: var(--bg-input); -webkit-overflow-scrolling: touch; }
         table { width: 100%; border-collapse: collapse; white-space: nowrap; font-size: 13px; }
         th { background-color: var(--bg-panel); color: var(--accent-cyan); font-family: var(--font-header); font-size: 14px; font-weight: 700; padding: 12px; text-align: left; position: sticky; top: 0; z-index: 10; border-bottom: 2px solid var(--accent-cyan); }
@@ -311,7 +309,6 @@
         /* MOBILE RESPONSIVENESS */
         @media (max-width: 1024px) {
             .hud-container { grid-template-columns: 1fr; gap: 10px; }
-            .dashboard-top-row { grid-template-columns: 1fr; }
         }
         @media (max-width: 768px) {
             body { padding: 10px; }
@@ -506,57 +503,51 @@
         </form>
     </div>
 
-    <!-- MIDDLE ROW: LEDGER & ZONE SUMMARY -->
-    <div id="dashboardTopRow">
-        <!-- 2. Master Ledger -->
-        <div class="card" id="ledgerSection" style="margin-bottom:0;">
-            <div class="card-header">
-                <h3>MASTER LEDGER</h3>
-            </div>
-            
-            <!-- ADVANCED TACTICAL SEARCH BAR -->
-            <input type="text" id="searchInput" class="search-bar" placeholder="> SCAN LEDGER: ENTER PATIENT, ASSET, OR ZONE..." onkeyup="filterLedger()">
-
-            <div class="table-responsive">
-                <table id="dataTable">
-                    <thead>
-                        <tr>
-                            <th>ZONE</th>
-                            <th>PATIENT</th>
-                            <th>LIFESPAN</th>
-                            <th>GOV</th>
-                            <th>ASSET (QTY/UNIT)</th>
-                            <th>OPR</th>
-                            <th>REMARKS</th>
-                            <th>CMD</th>
-                        </tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
-            </div>
+    <!-- 2. Master Ledger -->
+    <div class="card" id="ledgerSection">
+        <div class="card-header">
+            <h3>MASTER LEDGER</h3>
         </div>
+        <input type="text" id="searchInput" class="search-bar" placeholder="> SCAN LEDGER: ENTER PATIENT, ASSET, OR ZONE..." onkeyup="filterLedger()">
+        <div class="table-responsive">
+            <table id="dataTable">
+                <thead>
+                    <tr>
+                        <th>ZONE</th>
+                        <th>PATIENT</th>
+                        <th>LIFESPAN</th>
+                        <th>GOV</th>
+                        <th>ASSET (QTY/UNIT)</th>
+                        <th>OPR</th>
+                        <th>REMARKS</th>
+                        <th>CMD</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
 
-        <!-- 3. Zone Summary -->
-        <div class="card" id="zoneSummarySection" style="margin-bottom:0; border-top: 3px solid var(--accent-cyan);">
-            <div class="card-header"><h3>SUMMARY PER ZONE</h3></div>
-            <div class="table-responsive">
-                <table class="summary-table" id="summaryTable">
-                    <thead>
-                        <tr>
-                            <th>ZONE</th>
-                            <th>ASSET</th>
-                            <th>TOTAL</th>
-                            <th>UNIT</th>
-                        </tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
-            </div>
+    <!-- 3. Zone Summary -->
+    <div class="card summary-card" id="zoneSummarySection">
+        <div class="card-header"><h3>SUMMARY PER ZONE</h3></div>
+        <div class="table-responsive">
+            <table class="summary-table" id="summaryTable">
+                <thead>
+                    <tr>
+                        <th>ZONE</th>
+                        <th>ASSET</th>
+                        <th>TOTAL</th>
+                        <th>UNIT</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
         </div>
     </div>
 
     <!-- 4. Global Summary -->
-    <div class="card global-summary-card" id="globalSummarySection" style="border-top: 3px solid var(--accent-gold);">
+    <div class="card global-summary-card" id="globalSummarySection">
         <div class="card-header"><h3>GLOBAL SUMMARY</h3></div>
         <div class="table-responsive">
             <table class="summary-table" id="globalSummaryTable">
@@ -646,20 +637,16 @@
         const ledgerSec = document.getElementById('ledgerSection');
         const zoneSec = document.getElementById('zoneSummarySection');
         const globalSec = document.getElementById('globalSummarySection');
-        const topRow = document.getElementById('dashboardTopRow');
 
         hudSec.style.display = 'none';
         formSec.style.display = 'none';
         ledgerSec.style.display = 'none';
         zoneSec.style.display = 'none';
         globalSec.style.display = 'none';
-        topRow.style.display = 'none';
 
         if (view === 'all') {
             hudSec.style.display = 'grid';
             formSec.style.display = 'block';
-            topRow.style.display = 'grid';
-            topRow.style.gridTemplateColumns = window.innerWidth > 1024 ? '2.5fr 1fr' : '1fr';
             ledgerSec.style.display = 'block';
             zoneSec.style.display = 'block';
             globalSec.style.display = 'block';
@@ -667,13 +654,9 @@
             formSec.style.display = 'block';
         } else if (view === 'ledger') {
             hudSec.style.display = 'grid';
-            topRow.style.display = 'grid';
-            topRow.style.gridTemplateColumns = '1fr';
             ledgerSec.style.display = 'block';
         } else if (view === 'zone') {
             hudSec.style.display = 'grid';
-            topRow.style.display = 'grid';
-            topRow.style.gridTemplateColumns = '1fr';
             zoneSec.style.display = 'block';
         } else if (view === 'global') {
             hudSec.style.display = 'grid';
@@ -766,7 +749,6 @@
         const expDate = new Date(expiryDateString);
         if (isNaN(expDate.getTime())) return Infinity;
         
-        // Neutralize both dates to local midnight
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         expDate.setHours(0, 0, 0, 0);
@@ -1052,9 +1034,9 @@
             const diffDays = getDaysUntilExpiry(rec.glExpiry);
             if (diffDays < 0) {
                 expiredCount++;
-                return false; // Remove this from the array
+                return false; 
             }
-            return true; // Keep active records
+            return true; 
         });
 
         if (expiredCount === 0) {
