@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TACTICAL MEDICINE TRACKER O.S.</title>
+    <!-- SheetJS for Excel Export and Import -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- Google Fonts for Tactical UI -->
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* Tactical Dark Color Palette */
+            --bg-base: #05090c;
+            --bg-panel: #0d141b;
+            --bg-input: #121c26;
+            --border-dim: #1e2d3d;
+            --border-bright: #3a536e;
+            
+            --text-main: #c5d4e3;
+            --text-muted: #64819e;
+            --text-bright: #ffffff;
+            
+            --accent-cyan: #00f0ff;
+            --accent-gold: #ffb800;
+            --accent-red: #ff2a2a;
+            --accent-green: #00ff66;
+            
+            --font-header: 'Rajdhani', sans-serif;
+            --font-data: 'Share Tech Mono', monospace;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: var(--bg-base);
+            color: var(--text-main);
+            /* Subtle grid background for tactical feel */
+            background-image: 
+                linear-gradient(rgba(30, 45, 61, 0.1) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(30, 45, 61, 0.1) 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+
+        h2, h3 {
+            font-family: var(--font-header);
+            color: var(--text-bright);
+            margin-top: 0;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            border-bottom: 1px solid var(--border-bright);
+            padding-bottom: 10px;
+            text-shadow: 0 0 10px rgba(0, 240, 255, 0.3);
+            display: flex;
+            align-items: center;
+        }
+
+        h2::before {
+            content: "■";
+            color: var(--accent-cyan);
+            margin-right: 10px;
+            font-size: 18px;
+        }
+
+        .container {
+            max-width: 1500px;
+            margin: 0 auto;
+        }
+
+        .card {
+            background: rgba(13, 20, 27, 0.85);
+            backdrop-filter: blur(5px);
+            padding: 20px;
+            border-radius: 4px;
+            border: 1px solid var(--border-dim);
+            border-top: 3px solid var(--border-bright);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+            margin-bottom: 20px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            font-family: var(--font-header);
+            font-size: 13px;
+            font-weight: 700;
+            margin-bottom: 6px;
+            color: var(--accent-cyan);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 10px 12px;
+            background-color: var(--bg-input);
+            border: 1px solid var(--border-dim);
+            border-radius: 2px;
+            color: var(--text-bright);
+            font-family: var(--font-data);
+            font-size: 14px;
+            text-transform: uppercase;
+            transition: all 0.3s ease;
+            box-sizing: border-box;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--accent-cyan);
+            box-shadow: 0 0 8px rgba(0, 240, 255, 0.2);
+            background-color: #172431;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            border-top: 1px dashed var(--border-dim);
+            padding-top: 20px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: 1px solid transparent;
+            border-radius: 2px;
+            cursor: pointer;
+            color: var(--bg-base);
+            font-family: var(--font-header);
+            font-weight: 700;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            transition: all 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn:active { transform: scale(0.98); }
+        
+        .btn-add { 
+            background-color: var(--accent-green); 
+            box-shadow: 0 0 10px rgba(0, 255, 102, 0.2);
+            flex: 1;
+        }
+        .btn-add:hover { background-color: #00cc52; box-shadow: 0 0 15px rgba(0, 255, 102, 0.4); }
+
+        .btn-export { background-color: var(--accent-cyan); }
+        .btn-export:hover { background-color: #00c4d1; box-shadow: 0 0 15px rgba(0, 240, 255, 0.4); }
+
+        .btn-import { background-color: var(--accent-gold); }
+        .btn-import:hover { background-color: #d69a00; box-shadow: 0 0 15px rgba(255, 184, 0, 0.4); }
+
+        .btn-clear { 
+            background-color: transparent;
+            border: 1px solid var(--accent-red);
+            color: var(--accent-red);
+        }
+        .btn-clear:hover { 
+            background-color: var(--accent-red);
+            color: white;
+            box-shadow: 0 0 15px rgba(255, 42, 42, 0.4);
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 2fr 1.2fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 1200px) {
+            .dashboard-grid { grid-template-columns: 1fr; }
+        }
+
+        .table-responsive {
+            overflow-x: auto;
+            max-height: 600px;
+            overflow-y: auto;
+            border: 1px solid var(--border-dim);
+            background: #0a1016;
+        }
+
+        /* Custom Scrollbar for tactical look */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: var(--bg-base); }
+        ::-webkit-scrollbar-thumb { background: var(--border-bright); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--accent-cyan); }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            white-space: nowrap;
+            font-size: 13px;
+        }
+
+        th {
+            background-color: #0f1722;
+            color: var(--accent-cyan);
+            font-family: var(--font-header);
+            font-size: 14px;
+            font-weight: 700;
+            padding: 14px 12px;
+            text-align: left;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            border-bottom: 2px solid var(--accent-cyan);
+            letter-spacing: 1px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid var(--border-dim);
+            color: var(--text-main);
+            font-family: var(--font-data);
+        }
+
+        tr:nth-child(even) { background-color: rgba(255, 255, 255, 0.01); }
+        tr:hover { background-color: rgba(0, 240, 255, 0.05); }
+
+        /* Highlight classes for Auto-Filter Expiring */
+        .row-expired {
+            background-color: rgba(255, 42, 42, 0.1) !important;
+            border-left: 3px solid var(--accent-red);
+        }
+        .row-expiring {
+            background-color: rgba(255, 184, 0, 0.08) !important;
+            border-left: 3px solid var(--accent-gold);
+        }
+
+        .tag-location {
+            background-color: rgba(0, 240, 255, 0.1);
+            color: var(--accent-cyan);
+            padding: 4px 8px;
+            border-radius: 2px;
+            font-family: var(--font-header);
+            font-weight: 700;
+            font-size: 12px;
+            display: inline-block;
+            border: 1px solid rgba(0, 240, 255, 0.3);
+        }
+
+        .tag-qty {
+            font-weight: bold;
+            color: var(--accent-gold);
+            font-size: 15px;
+            text-shadow: 0 0 5px rgba(255, 184, 0, 0.3);
+        }
+
+        .delete-btn {
+            background-color: transparent;
+            color: var(--accent-red);
+            border: 1px solid var(--accent-red);
+            padding: 6px 10px;
+            border-radius: 2px;
+            cursor: pointer;
+            font-family: var(--font-header);
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            transition: all 0.2s;
+        }
+
+        .delete-btn:hover {
+            background-color: var(--accent-red);
+            color: white;
+            box-shadow: 0 0 10px rgba(255, 42, 42, 0.5);
+        }
+
+        .summary-card {
+            border-top: 3px solid var(--accent-gold);
+        }
+
+        /* Tactical Expiration Alerts */
+        .tag-alert {
+            color: var(--bg-base);
+            padding: 2px 6px;
+            border-radius: 2px;
+            font-family: var(--font-header);
+            font-size: 10px;
+            font-weight: 700;
+            display: inline-block;
+            margin-top: 4px;
+            letter-spacing: 1px;
+        }
+
+        @keyframes alert-pulse {
+            0% { opacity: 1; box-shadow: 0 0 5px var(--accent-gold); }
+            50% { opacity: 0.7; box-shadow: 0 0 15px var(--accent-gold); }
+            100% { opacity: 1; box-shadow: 0 0 5px var(--accent-gold); }
+        }
+
+        @keyframes critical-pulse {
+            0% { opacity: 1; box-shadow: 0 0 5px var(--accent-red); }
+            50% { opacity: 0.8; box-shadow: 0 0 20px var(--accent-red); }
+            100% { opacity: 1; box-shadow: 0 0 5px var(--accent-red); }
+        }
+
+        .expiring-soon {
+            background-color: var(--accent-gold);
+            animation: alert-pulse 1.5s infinite;
+        }
+
+        .expired {
+            background-color: var(--accent-red);
+            color: white;
+            animation: critical-pulse 1s infinite;
+            border: 1px solid #ffaaaa;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>SYS-COM: MEDICINE OPS TRACKER</h2>
+
+    <!-- Form Panel -->
+    <div class="card">
+        <form id="dataForm">
+            <div class="form-grid">
+                <div>
+                    <label>PATIENT DESIGNATION</label>
+                    <input type="text" id="patientName" placeholder="e.g. PT. ARTHUR LOZADA" oninput="this.value = this.value.toUpperCase()" required>
+                </div>
+                <div>
+                    <label>GL ISSUE DATE</label>
+                    <input type="date" id="glDate" required>
+                </div>
+                <div>
+                    <label>GL EXPIRATION</label>
+                    <input type="date" id="glExpiry" required>
+                </div>
+                <div>
+                    <label>GOV BRANCH</label>
+                    <input type="text" id="government" placeholder="e.g. OP, PCSO" oninput="this.value = this.value.toUpperCase()" required>
+                </div>
+                <div>
+                    <label>ZONE / LOCATION</label>
+                    <input type="text" id="location" placeholder="e.g. MANILA, LAGUNA" oninput="this.value = this.value.toUpperCase()" required>
+                </div>
+                <div>
+                    <label>OPERATOR</label>
+                    <input type="text" id="processedBy" placeholder="Nag process" oninput="this.value = this.value.toUpperCase()" required>
+                </div>
+                <div>
+                    <label>ASSET (MEDICINE)</label>
+                    <input type="text" id="medicine" placeholder="e.g. ANAGREBENE" oninput="this.value = this.value.toUpperCase()" required>
+                </div>
+                <div>
+                    <label>QTY</label>
+                    <input type="number" id="quantity" placeholder="18" min="1" required>
+                </div>
+                <div>
+                    <label>UNIT</label>
+                    <input type="text" id="uom" placeholder="BOXES, VIAL" oninput="this.value = this.value.toUpperCase()" required>
+                </div>
+                <div>
+                    <label>INTEL / REMARKS</label>
+                    <input type="text" id="remarks" placeholder="Optional notes" oninput="this.value = this.value.toUpperCase()">
+                </div>
+            </div>
+            <div class="btn-group">
+                <button type="button" class="btn btn-add" onclick="addData()">[+] INITIALIZE ENTRY</button>
+                <button type="button" class="btn btn-export" onclick="exportToExcel()">EXPORT REGISTRY</button>
+                
+                <input type="file" id="fileInput" accept=".xlsx, .xls" style="display: none;" onchange="importExcel(event)">
+                <button type="button" class="btn btn-import" onclick="document.getElementById('fileInput').click()">IMPORT BATCH (EXCEL)</button>
+
+                <button type="button" class="btn btn-clear" onclick="clearData()">PURGE SYSTEM</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Main Content Area -->
+    <div class="dashboard-grid">
+        
+        <!-- Detailed Master Table -->
+        <div class="card">
+            <h3>MASTER LEDGER [AUTO-SORTED BY CRITICAL EXPIRATION]</h3>
+            <div class="table-responsive">
+                <table id="dataTable">
+                    <thead>
+                        <tr>
+                            <th>ZONE</th>
+                            <th>PATIENT</th>
+                            <th>LIFESPAN (GL DATE)</th>
+                            <th>GOV</th>
+                            <th>ASSET (QTY/UOM)</th>
+                            <th>OPR</th>
+                            <th>REMARKS</th>
+                            <th>CMD</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Summary Panel Grouped By Location -->
+        <div class="card summary-card">
+            <h3>LOGISTICS SUMMARY</h3>
+            <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 15px; font-family: var(--font-data);">
+                > AGGREGATING IDENTICAL ASSETS PER ZONE...
+            </p>
+            <div class="table-responsive">
+                <table class="summary-table" id="summaryTable">
+                    <thead>
+                        <tr>
+                            <th>ZONE</th>
+                            <th>ASSET</th>
+                            <th>TOTAL</th>
+                            <th>UNIT</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    let records = JSON.parse(localStorage.getItem('tacticalMedTracker')) || [];
+
+    function formatDate(dateString) {
+        if (!dateString) return "UNKNOWN";
+        const options = { year: '2-digit', month: 'short', day: 'numeric' };
+        const dateObj = new Date(dateString);
+        if (isNaN(dateObj.getTime())) return dateString; 
+        return dateObj.toLocaleDateString('en-US', options).toUpperCase();
+    }
+
+    function renderMasterTable() {
+        const tbody = document.querySelector('#dataTable tbody');
+        tbody.innerHTML = '';
+
+        if (records.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color: var(--text-muted); padding: 30px; font-family: var(--font-header); letter-spacing: 2px;">NO ACTIVE ENTRIES DETECTED.</td></tr>';
+            return;
+        }
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        // --- NEW AUTO-FILTER & SORTING LOGIC ---
+        // 1. Expired / Expiring Soon items go to the very top.
+        // 2. Then sorted by nearest expiration date.
+        // 3. Normal items go below, sorted by Location -> Patient Name.
+        let sortedRecords = [...records].sort((a, b) => {
+            let daysA = Infinity;
+            if (a.glExpiry) {
+                const expA = new Date(a.glExpiry);
+                if (!isNaN(expA.getTime())) daysA = Math.ceil((expA - today) / (1000 * 60 * 60 * 24));
+            }
+
+            let daysB = Infinity;
+            if (b.glExpiry) {
+                const expB = new Date(b.glExpiry);
+                if (!isNaN(expB.getTime())) daysB = Math.ceil((expB - today) / (1000 * 60 * 60 * 24));
+            }
+
+            const alertA = daysA <= 25;
+            const alertB = daysB <= 25;
+
+            // Priority to Alerts
+            if (alertA && !alertB) return -1;
+            if (!alertA && alertB) return 1;
+
+            // If both are in alert state, sort by who is expiring soonest/most expired
+            if (alertA && alertB) {
+                if (daysA !== daysB) return daysA - daysB;
+            }
+
+            // Normal sorting for non-alert items
+            if (a.location === b.location) {
+                if (a.government === b.government) {
+                    return a.patientName.localeCompare(b.patientName);
+                }
+                return a.government.localeCompare(b.government);
+            }
+            return a.location.localeCompare(b.location);
+        });
+
+        sortedRecords.forEach((rec) => {
+            const tr = document.createElement('tr');
+            
+            // --- EXPIRATION STYLING ---
+            let expiryStatusHTML = "";
+            let expiryDateStyle = "color: var(--text-muted);";
+            let rowClass = "";
+
+            if (rec.glExpiry) {
+                const expDate = new Date(rec.glExpiry);
+                if (!isNaN(expDate.getTime())) {
+                    const diffTime = expDate - today;
+                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+                    if (diffDays < 0) {
+                        expiryStatusHTML = `<br><span class="tag-alert expired">CRITICAL: EXPIRED</span>`;
+                        expiryDateStyle = `color: var(--accent-red); font-weight: bold;`;
+                        rowClass = "row-expired";
+                    } else if (diffDays <= 25) {
+                        expiryStatusHTML = `<br><span class="tag-alert expiring-soon">WARNING: ${diffDays} DAY(S) LEFT</span>`;
+                        expiryDateStyle = `color: var(--accent-gold); font-weight: bold;`;
+                        rowClass = "row-expiring";
+                    }
+                }
+            }
+            
+            if(rowClass) tr.className = rowClass;
+
+            tr.innerHTML = `
+                <td><span class="tag-location">${rec.location}</span></td>
+                <td><strong style="color: var(--text-bright);">${rec.patientName}</strong></td>
+                <td style="font-size: 11px;">
+                    <span style="color: var(--text-muted);">${formatDate(rec.glDate)}</span><br>
+                    <span style="${expiryDateStyle}">EXP: ${formatDate(rec.glExpiry)}</span>
+                    ${expiryStatusHTML}
+                </td>
+                <td>${rec.government}</td>
+                <td><span style="color:#ecf0f1; font-weight: bold;">${rec.medicine}</span> <br> <span class="tag-qty">${rec.quantity}</span> <span style="font-size:11px; color: var(--text-muted);">${rec.uom}</span></td>
+                <td style="color: var(--text-muted);">${rec.processedBy}</td>
+                <td style="font-size: 11px; color: #888;">${rec.remarks || '--'}</td>
+                <td><button class="delete-btn" onclick="deleteData('${rec.id}')">X</button></td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    function renderSummaryTable() {
+        const tbody = document.querySelector('#summaryTable tbody');
+        tbody.innerHTML = '';
+
+        if (records.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color: var(--text-muted); padding: 20px; font-family: var(--font-header);">AWAITING DATA INPUT</td></tr>';
+            return;
+        }
+
+        const summaryMap = {};
+
+        records.forEach((rec) => {
+            const loc = (rec.location || "").trim().toUpperCase();
+            const medName = (rec.medicine || "").trim().toUpperCase();
+            const currentUom = (rec.uom || "").trim().toUpperCase();
+            
+            const medKey = medName;
+            
+            if (!summaryMap[loc]) summaryMap[loc] = {};
+            
+            if (!summaryMap[loc][medKey]) {
+                summaryMap[loc][medKey] = {
+                    medicine: medName,
+                    uom: currentUom,
+                    totalQty: 0
+                };
+            } else {
+                let existingUomArray = summaryMap[loc][medKey].uom.split(" / ");
+                if (currentUom !== "" && !existingUomArray.includes(currentUom)) {
+                    summaryMap[loc][medKey].uom += " / " + currentUom;
+                }
+            }
+            
+            summaryMap[loc][medKey].totalQty += parseFloat(rec.quantity) || 0;
+        });
+
+        const sortedLocations = Object.keys(summaryMap).sort();
+
+        sortedLocations.forEach(loc => {
+            const medsList = Object.values(summaryMap[loc]).sort((a, b) => a.medicine.localeCompare(b.medicine));
+            
+            medsList.forEach((item, index) => {
+                const tr = document.createElement('tr');
+                const locCell = index === 0 
+                    ? `<span class="tag-location">${loc}</span>` 
+                    : `<span style="opacity: 0.1;">"</span>`;
+
+                tr.innerHTML = `
+                    <td>${locCell}</td>
+                    <td><strong style="color: var(--text-bright);">${item.medicine}</strong></td>
+                    <td><span class="tag-qty">${item.totalQty}</span></td>
+                    <td style="color: var(--text-muted);">${item.uom}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        });
+    }
+
+    function addData() {
+        const patientName = document.getElementById('patientName').value.trim().toUpperCase();
+        const glDate = document.getElementById('glDate').value;
+        const glExpiry = document.getElementById('glExpiry').value;
+        const government = document.getElementById('government').value.trim().toUpperCase();
+        const location = document.getElementById('location').value.trim().toUpperCase();
+        const processedBy = document.getElementById('processedBy').value.trim().toUpperCase();
+        const medicine = document.getElementById('medicine').value.trim().toUpperCase();
+        const quantity = parseFloat(document.getElementById('quantity').value);
+        const uom = document.getElementById('uom').value.trim().toUpperCase();
+        const remarks = document.getElementById('remarks').value.trim().toUpperCase();
+
+        if (!patientName || !glDate || !glExpiry || !government || !location || !processedBy || !medicine || isNaN(quantity) || !uom) {
+            alert("SYSTEM ERROR: REQUIRED PARAMETERS MISSING.");
+            return;
+        }
+
+        const newRecord = {
+            id: Date.now().toString(),
+            patientName, glDate, glExpiry, government, location, processedBy, medicine, quantity, uom, remarks
+        };
+
+        records.push(newRecord);
+        saveData();
+
+        document.getElementById('patientName').value = '';
+        document.getElementById('medicine').value = '';
+        document.getElementById('quantity').value = '';
+        document.getElementById('uom').value = '';
+        document.getElementById('remarks').value = '';
+        document.getElementById('patientName').focus();
+    }
+
+    function deleteData(id) {
+        if (confirm("CONFIRM DELETION COMMAND?")) {
+            records = records.filter(r => r.id !== id);
+            saveData();
+        }
+    }
+
+    function clearData() {
+        if (confirm("CRITICAL WARNING: PURGING ALL SYSTEM DATA. CONTINUE?")) {
+            records = [];
+            saveData();
+        }
+    }
+
+    function saveData() {
+        localStorage.setItem('tacticalMedTracker', JSON.stringify(records));
+        renderMasterTable();
+        renderSummaryTable();
+    }
+
+    function parseExcelDate(val) {
+        if (!val) return '';
+        if (val instanceof Date) {
+            return val.toISOString().split('T')[0];
+        }
+        const d = new Date(val);
+        if (!isNaN(d.getTime())) {
+            return d.toISOString().split('T')[0];
+        }
+        return String(val);
+    }
+
+    function importExcel(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, {type: 'array', cellDates: true});
+
+            const sheetName = workbook.SheetNames.includes("Sheet1") ? "Sheet1" : workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[sheetName];
+            const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
+
+            if (jsonData.length === 0) {
+                alert("ERROR: EMPTY OR INVALID EXCEL STRUCTURE DETECTED.");
+                return;
+            }
+
+            let importedCount = 0;
+
+            jsonData.forEach(row => {
+                const cleanRow = {};
+                for (let key in row) {
+                    cleanRow[key.trim().toUpperCase()] = row[key];
+                }
+
+                const pName = cleanRow["PATIENT NAME"] || cleanRow["NAME OF THE PATIENT"] || "";
+                const med = cleanRow["MEDICINE"] || "";
+                
+                if (!pName || !med) return;
+
+                const dateGL = cleanRow["DATE OF GL"] || cleanRow["DATE OF GURANTEE LETTER"] || "";
+                const dateExp = cleanRow["EXPIRATION OF GL"] || cleanRow["EXPARATION OF GURANTEE LETTER"] || "";
+                const gov = cleanRow["GOVERNMENT"] || "";
+                const loc = cleanRow["AREA / LOCATION"] || "UNSPECIFIED";
+                const proc = cleanRow["PROCESSED BY"] || "SYS-IMPORT";
+                const remarks = cleanRow["REMARKS"] || "";
+
+                let rawQty = String(cleanRow["QUANTITY"] || "").trim().toUpperCase();
+                let finalQty = 0;
+                let finalUom = cleanRow["UOM"] ? String(cleanRow["UOM"]).trim().toUpperCase() : "";
+
+                if (!cleanRow["UOM"]) {
+                    let parsedNum = parseFloat(rawQty);
+                    if (isNaN(parsedNum)) {
+                        if (rawQty.includes("I VIAL")) {
+                            finalQty = 1;
+                            finalUom = "VIAL";
+                        } else {
+                            finalQty = 1;
+                            finalUom = rawQty;
+                        }
+                    } else {
+                        finalQty = parsedNum;
+                        finalUom = rawQty.replace(/^[0-9.]+\s*/, ''); 
+                    }
+                } else {
+                    finalQty = parseFloat(rawQty) || 0;
+                }
+
+                if (!finalUom) finalUom = "UNIT";
+
+                const newRecord = {
+                    id: Date.now().toString() + Math.random().toString(),
+                    patientName: String(pName).trim().toUpperCase(),
+                    glDate: parseExcelDate(dateGL),
+                    glExpiry: parseExcelDate(dateExp),
+                    government: String(gov).trim().toUpperCase(),
+                    location: String(loc).trim().toUpperCase(),
+                    processedBy: String(proc).trim().toUpperCase(),
+                    medicine: String(med).trim().toUpperCase(),
+                    quantity: finalQty,
+                    uom: finalUom,
+                    remarks: String(remarks).trim().toUpperCase()
+                };
+
+                records.push(newRecord);
+                importedCount++;
+            });
+
+            if (importedCount > 0) {
+                saveData();
+                alert(`OPERATION SUCCESS: ${importedCount} ASSETS INTEGRATED TO DATABASE.`);
+            } else {
+                alert("IMPORT FAILED. VERIFY 'MEDICINE' AND 'PATIENT NAME' COLUMNS.");
+            }
+
+            event.target.value = '';
+        };
+        reader.readAsArrayBuffer(file);
+    }
+
+    function exportToExcel() {
+        if (records.length === 0) {
+            alert("NO DATA FOR EXPORT.");
+            return;
+        }
+
+        let sortedRecords = [...records].sort((a, b) => {
+            if (a.location === b.location) {
+                return a.patientName.localeCompare(b.patientName);
+            }
+            return a.location.localeCompare(b.location);
+        });
+
+        const masterData = sortedRecords.map(rec => ({
+            "AREA / LOCATION": rec.location,
+            "PROCESSED BY": rec.processedBy,
+            "PATIENT NAME": rec.patientName,
+            "DATE OF GL": rec.glDate,
+            "EXPIRATION OF GL": rec.glExpiry,
+            "GOVERNMENT": rec.government,
+            "MEDICINE": rec.medicine,
+            "QUANTITY": rec.quantity,
+            "UOM": rec.uom,
+            "REMARKS": rec.remarks || ""
+        }));
+
+        const summaryArr = [];
+        const summaryMap = {};
+        
+        records.forEach((rec) => {
+            const loc = rec.location.trim().toUpperCase();
+            const medName = rec.medicine.trim().toUpperCase();
+            const currentUom = rec.uom.trim().toUpperCase();
+            
+            const medKey = medName;
+            
+            if (!summaryMap[loc]) summaryMap[loc] = {};
+            if (!summaryMap[loc][medKey]) {
+                summaryMap[loc][medKey] = { "MEDICINE": medName, "UOM": currentUom, "TOTAL QTY": 0 };
+            } else {
+                let existingUomArray = summaryMap[loc][medKey]["UOM"].split(" / ");
+                if (currentUom !== "" && !existingUomArray.includes(currentUom)) {
+                    summaryMap[loc][medKey]["UOM"] += " / " + currentUom;
+                }
+            }
+            
+            summaryMap[loc][medKey]["TOTAL QTY"] += parseFloat(rec.quantity) || 0;
+        });
+
+        Object.keys(summaryMap).sort().forEach(loc => {
+            const meds = Object.values(summaryMap[loc]).sort((a, b) => a["MEDICINE"].localeCompare(b["MEDICINE"]));
+            meds.forEach(m => {
+                summaryArr.push({
+                    "AREA / LOCATION": loc,
+                    "MEDICINE": m["MEDICINE"],
+                    "TOTAL QUANTITY COMPUTED": m["TOTAL QTY"],
+                    "UOM": m["UOM"]
+                });
+            });
+        });
+
+        const workbook = XLSX.utils.book_new();
+
+        const wsMaster = XLSX.utils.json_to_sheet(masterData);
+        wsMaster['!cols'] = [{wch: 20}, {wch: 20}, {wch: 30}, {wch: 15}, {wch: 15}, {wch: 15}, {wch: 25}, {wch: 10}, {wch: 10}, {wch: 20}];
+        XLSX.utils.book_append_sheet(workbook, wsMaster, "Master Ledger");
+
+        const wsSummary = XLSX.utils.json_to_sheet(summaryArr);
+        wsSummary['!cols'] = [{wch: 25}, {wch: 30}, {wch: 25}, {wch: 15}];
+        XLSX.utils.book_append_sheet(workbook, wsSummary, "Location Summary");
+
+        const dateStr = new Date().toISOString().split('T')[0];
+        XLSX.writeFile(workbook, `Medic_Ops_Tracker_${dateStr}.xlsx`);
+    }
+
+    renderMasterTable();
+    renderSummaryTable();
+</script>
+
+</body>
+</html>
