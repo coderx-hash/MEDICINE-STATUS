@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>TACTICAL MEDICINE TRACKER O.S.</title>
     <!-- SheetJS for Excel Export and Import -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -60,13 +60,20 @@
                 linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
             background-size: 20px 20px;
             transition: all 0.3s ease;
-            padding-bottom: 100px; /* Space for bottom popouts */
+            padding-bottom: 120px; /* Space for bottom popouts */
+        }
+
+        /* TOP NAV & THEME TOGGLE */
+        .top-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 15px;
         }
 
         .theme-toggle {
-            position: absolute;
-            top: 20px;
-            right: 20px;
             background: var(--bg-panel);
             border: 1px solid var(--accent-cyan);
             color: var(--accent-cyan);
@@ -78,24 +85,21 @@
             font-size: 14px;
             transition: 0.3s;
             box-shadow: 0 0 10px var(--shadow-btn);
-            z-index: 1000;
         }
         .theme-toggle:hover { background: var(--accent-cyan); color: #fff; }
 
         h2, h3 {
             font-family: var(--font-header);
             color: var(--text-bright);
-            margin-top: 0;
+            margin: 0;
             text-transform: uppercase;
             letter-spacing: 2px;
-            border-bottom: 1px solid var(--border-bright);
-            padding-bottom: 10px;
             display: flex;
             align-items: center;
         }
         h2::before { content: "■"; color: var(--accent-cyan); margin-right: 10px; font-size: 18px; }
 
-        .container { max-width: 1500px; margin: 0 auto; margin-top: 40px;}
+        .container { max-width: 1500px; margin: 0 auto; }
 
         .card {
             background: var(--bg-panel);
@@ -106,6 +110,12 @@
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
             margin-bottom: 20px;
             transition: all 0.3s;
+        }
+
+        .card-header {
+            border-bottom: 1px solid var(--border-bright);
+            padding-bottom: 10px;
+            margin-bottom: 15px;
         }
 
         .form-grid {
@@ -126,10 +136,7 @@
             letter-spacing: 1px;
         }
 
-        .input-group {
-            display: flex;
-            gap: 5px;
-        }
+        .input-group { display: flex; gap: 5px; }
 
         input, select {
             width: 100%;
@@ -143,6 +150,7 @@
             text-transform: uppercase;
             transition: all 0.3s ease;
             box-sizing: border-box;
+            -webkit-appearance: none; /* Better mobile rendering */
         }
 
         input:focus, select:focus {
@@ -155,11 +163,12 @@
             background: var(--bg-input);
             border: 1px solid var(--border-dim);
             color: var(--text-main);
-            padding: 0 10px;
+            padding: 0 12px;
             cursor: pointer;
             font-weight: bold;
             border-radius: 2px;
             transition: 0.2s;
+            font-size: 16px;
         }
         .btn-opt:hover { border-color: var(--accent-cyan); color: var(--accent-cyan); }
         .btn-opt-del:hover { border-color: var(--accent-red); color: var(--accent-red); }
@@ -167,7 +176,7 @@
         .btn-group { display: flex; gap: 12px; flex-wrap: wrap; border-top: 1px dashed var(--border-dim); padding-top: 20px; }
 
         .btn {
-            padding: 12px 24px;
+            padding: 12px 20px;
             border: 1px solid transparent;
             border-radius: 2px;
             cursor: pointer;
@@ -175,26 +184,33 @@
             font-weight: 700;
             font-size: 14px;
             text-transform: uppercase;
-            letter-spacing: 2px;
+            letter-spacing: 1px;
             transition: all 0.2s;
+            flex-grow: 1;
+            text-align: center;
         }
         .btn:active { transform: scale(0.98); }
         
-        .btn-add { background-color: var(--accent-green); color: #000; flex: 1; }
+        .btn-add { background-color: var(--accent-green); color: #000; }
         .btn-export { background-color: var(--accent-cyan); color: #fff; }
         .btn-import { background-color: var(--accent-gold); color: #000; }
         .btn-clear { background-color: transparent; border: 1px solid var(--accent-red); color: var(--accent-red); }
         .btn-clear:hover { background-color: var(--accent-red); color: white; }
 
-        .dashboard-grid { display: grid; grid-template-columns: 2fr 1.2fr; gap: 20px; }
-        @media (max-width: 1200px) { .dashboard-grid { grid-template-columns: 1fr; } }
+        /* GRID FOR DESKTOP */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr;
+            gap: 20px;
+        }
 
         .table-responsive {
             overflow-x: auto;
-            max-height: 600px;
+            max-height: 500px;
             overflow-y: auto;
             border: 1px solid var(--border-dim);
             background: var(--bg-input);
+            -webkit-overflow-scrolling: touch; /* Smooth mobile scroll */
         }
 
         table { width: 100%; border-collapse: collapse; white-space: nowrap; font-size: 13px; }
@@ -204,36 +220,37 @@
             font-family: var(--font-header);
             font-size: 14px;
             font-weight: 700;
-            padding: 14px 12px;
+            padding: 12px;
             text-align: left;
             position: sticky;
             top: 0;
             z-index: 10;
             border-bottom: 2px solid var(--accent-cyan);
         }
-        td { padding: 12px; border-bottom: 1px solid var(--border-dim); color: var(--text-main); font-family: var(--font-data); }
+        td { padding: 10px 12px; border-bottom: 1px solid var(--border-dim); color: var(--text-main); font-family: var(--font-data); }
         tr:nth-child(even) { background-color: rgba(0, 0, 0, 0.02); }
         tr:hover { background-color: rgba(0, 240, 255, 0.05); }
 
         .row-expired { background-color: rgba(255, 42, 42, 0.1) !important; border-left: 3px solid var(--accent-red); }
         .row-expiring { background-color: rgba(255, 184, 0, 0.08) !important; border-left: 3px solid var(--accent-gold); }
 
-        .tag-location, .tag-uom {
+        .tag-location {
             background-color: rgba(0, 240, 255, 0.1);
             color: var(--accent-cyan);
             padding: 4px 8px;
             border-radius: 2px;
             font-family: var(--font-header);
             font-weight: 700;
-            font-size: 12px;
+            font-size: 11px;
             border: 1px solid rgba(0, 240, 255, 0.3);
         }
-        .tag-qty { font-weight: bold; color: var(--accent-gold); font-size: 15px; }
+        .tag-qty { font-weight: bold; color: var(--accent-gold); font-size: 14px; }
 
         .delete-btn { background-color: transparent; color: var(--accent-red); border: 1px solid var(--accent-red); padding: 4px 8px; border-radius: 2px; cursor: pointer; font-size: 11px; font-weight: bold; }
         .delete-btn:hover { background-color: var(--accent-red); color: white; }
 
-        .summary-card { border-top: 3px solid var(--accent-gold); }
+        .summary-card { border-top: 3px solid var(--accent-cyan); }
+        .global-summary-card { border-top: 3px solid var(--accent-gold); }
 
         /* FLOATING ACTION BAR & POP-OUTS */
         .floating-bar {
@@ -244,22 +261,28 @@
             display: flex;
             gap: 15px;
             z-index: 1000;
+            width: 90%;
+            max-width: 800px;
+            justify-content: center;
         }
 
         .toast-btn {
-            padding: 15px 25px;
+            padding: 12px 20px;
             border: none;
             border-radius: 50px;
             font-family: var(--font-header);
-            font-size: 16px;
+            font-size: 15px;
             font-weight: bold;
             cursor: pointer;
             box-shadow: 0 10px 20px rgba(0,0,0,0.5);
             animation: bounce 2s infinite;
             display: flex;
             align-items: center;
+            justify-content: center;
             gap: 10px;
             color: #fff;
+            flex: 1;
+            text-align: center;
         }
 
         .toast-alert { background: var(--accent-red); }
@@ -267,51 +290,53 @@
 
         @keyframes bounce {
             0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-10px); }
+            50% { transform: translateY(-8px); }
         }
 
         /* MODALS */
         .modal {
-            display: none; 
-            position: fixed; 
-            z-index: 2000; 
-            left: 0; top: 0; 
-            width: 100%; height: 100%; 
-            background-color: rgba(0,0,0,0.8);
+            display: none; position: fixed; z-index: 2000; left: 0; top: 0; 
+            width: 100%; height: 100%; background-color: rgba(0,0,0,0.8);
             backdrop-filter: blur(5px);
         }
         .modal-content {
-            background-color: var(--bg-panel);
-            margin: 5% auto; 
-            padding: 20px; 
-            border: 1px solid var(--accent-cyan);
-            width: 90%; 
-            max-width: 1000px;
-            border-radius: 4px;
-            color: var(--text-main);
+            background-color: var(--bg-panel); margin: 5% auto; padding: 20px; 
+            border: 1px solid var(--accent-cyan); width: 95%; max-width: 1000px;
+            border-radius: 4px; color: var(--text-main);
             box-shadow: 0 0 30px rgba(0,240,255,0.2);
+            max-height: 85vh; overflow-y: auto;
         }
-        .close-btn { color: var(--accent-red); float: right; font-size: 28px; font-weight: bold; cursor: pointer; }
+        .close-btn { color: var(--accent-red); float: right; font-size: 28px; font-weight: bold; cursor: pointer; margin-top:-10px;}
         .close-btn:hover { color: #fff; }
 
-        .alert-tag {
-            background: var(--accent-red);
-            color: white; padding: 2px 5px; border-radius: 2px; font-size: 10px; font-weight: bold;
-        }
+        .alert-tag { background: var(--accent-red); color: white; padding: 2px 5px; border-radius: 2px; font-size: 10px; font-weight: bold; }
         .warning-tag { background: var(--accent-gold); color: black; padding: 2px 5px; border-radius: 2px; font-size: 10px; font-weight: bold; }
+
+        /* MOBILE RESPONSIVENESS */
+        @media (max-width: 1024px) {
+            .dashboard-grid { grid-template-columns: 1fr; }
+        }
+        
+        @media (max-width: 768px) {
+            body { padding: 10px; padding-bottom: 140px; }
+            .top-nav { flex-direction: column; align-items: flex-start; }
+            .form-grid { grid-template-columns: 1fr; }
+            .floating-bar { flex-direction: column; gap: 10px; bottom: 10px; }
+            .toast-btn { font-size: 13px; padding: 10px; animation: none; } /* Disable bounce on mobile to save space/distraction */
+            h2 { font-size: 18px; }
+            h3 { font-size: 16px; }
+        }
     </style>
 </head>
 <body data-theme="dark">
 
-<button class="theme-toggle" onclick="toggleTheme()" id="themeBtn">🌞 SWITCH TO LIGHT MODE</button>
-
 <!-- Floating Pop-outs at the bottom -->
 <div class="floating-bar">
     <button class="toast-btn toast-alert" id="btnAlertToast" onclick="openModal('alertModal')" style="display:none;">
-        ⚠️ ITO MALAPIT NA MA-EXPIRED! CLICK THIS
+        ⚠️ MALAPIT NA MA-EXPIRED! CLICK THIS
     </button>
     <button class="toast-btn toast-pending" id="btnPendingToast" onclick="openModal('pendingModal')">
-        📦 PENDING MEDICINES (<span id="pendingCount">0</span>)
+        📦 GLOBAL PENDING (<span id="pendingCount">0</span>) CLICK THIS
     </button>
 </div>
 
@@ -319,7 +344,7 @@
 <div id="alertModal" class="modal">
     <div class="modal-content">
         <span class="close-btn" onclick="closeModal('alertModal')">&times;</span>
-        <h2>⚠️ CRITICAL ALERT: EXPIRING GLs</h2>
+        <div class="card-header"><h2>⚠️ CRITICAL ALERT: EXPIRING GLs</h2></div>
         <div class="table-responsive">
             <table id="alertTable">
                 <thead><tr><th>STATUS</th><th>PATIENT</th><th>GL EXPIRATION</th><th>MEDICINE</th><th>ZONE</th></tr></thead>
@@ -333,10 +358,10 @@
 <div id="pendingModal" class="modal">
     <div class="modal-content">
         <span class="close-btn" onclick="closeModal('pendingModal')">&times;</span>
-        <h2>📦 ALL PENDING MEDICINES</h2>
+        <div class="card-header"><h2>📦 GRAND TOTAL PENDING (ALL ZONES)</h2></div>
         <div class="table-responsive">
             <table id="pendingTableModal">
-                <thead><tr><th>MEDICINE</th><th>TOTAL QTY</th><th>UNIT</th><th>LOCATION(S)</th></tr></thead>
+                <thead><tr><th>ASSET / MEDICINE</th><th>GRAND TOTAL</th><th>UNIT</th><th>LOCATION(S) ASSIGNED</th></tr></thead>
                 <tbody></tbody>
             </table>
         </div>
@@ -344,7 +369,10 @@
 </div>
 
 <div class="container">
-    <h2>SYS-COM: MEDICINE OPS TRACKER</h2>
+    <div class="top-nav">
+        <h2>SYS-COM: MEDICINE OPS</h2>
+        <button class="theme-toggle" onclick="toggleTheme()" id="themeBtn">🌞 SWITCH TO LIGHT MODE</button>
+    </div>
 
     <!-- Form Panel -->
     <div class="card">
@@ -368,7 +396,7 @@
                     <label>GOV BRANCH</label>
                     <div class="input-group">
                         <select id="government"></select>
-                        <button type="button" class="btn-opt" onclick="addCustomOption('government', 'govList', 'Enter new Government Branch:')">+</button>
+                        <button type="button" class="btn-opt" onclick="addCustomOption('government', 'govList', 'Enter new Government Branch (e.g., DSWD, LGU):')">+</button>
                         <button type="button" class="btn-opt btn-opt-del" onclick="deleteCustomOption('government', 'govList')">-</button>
                     </div>
                 </div>
@@ -400,7 +428,7 @@
                     <label>UNIT</label>
                     <div class="input-group">
                         <select id="uom"></select>
-                        <button type="button" class="btn-opt" onclick="addCustomOption('uom', 'uomList', 'Enter new Unit (UOM):')">+</button>
+                        <button type="button" class="btn-opt" onclick="addCustomOption('uom', 'uomList', 'Enter new Unit (e.g. BOTTLE, PACK):')">+</button>
                         <button type="button" class="btn-opt btn-opt-del" onclick="deleteCustomOption('uom', 'uomList')">-</button>
                     </div>
                 </div>
@@ -414,25 +442,26 @@
                 <button type="button" class="btn btn-add" onclick="addData()">[+] INITIALIZE ENTRY</button>
                 <button type="button" class="btn btn-export" onclick="exportToExcel()">EXPORT REGISTRY</button>
                 <input type="file" id="fileInput" accept=".xlsx, .xls" style="display: none;" onchange="importExcel(event)">
-                <button type="button" class="btn btn-import" onclick="document.getElementById('fileInput').click()">IMPORT BATCH</button>
-                <button type="button" class="btn btn-clear" onclick="clearData()">PURGE SYSTEM</button>
+                <button type="button" class="btn btn-import" onclick="document.getElementById('fileInput').click()">IMPORT BATCH (EXCEL)</button>
+                <button type="button" class="btn btn-clear" onclick="clearData()">PURGE</button>
             </div>
         </form>
     </div>
 
     <!-- Main Content Area -->
     <div class="dashboard-grid">
+        <!-- 1. Master Ledger -->
         <div class="card">
-            <h3>MASTER LEDGER</h3>
+            <div class="card-header"><h3>MASTER LEDGER</h3></div>
             <div class="table-responsive">
                 <table id="dataTable">
                     <thead>
                         <tr>
                             <th>ZONE</th>
                             <th>PATIENT</th>
-                            <th>LIFESPAN (GL DATE)</th>
+                            <th>LIFESPAN</th>
                             <th>GOV</th>
-                            <th>ASSET (QTY/UOM)</th>
+                            <th>ASSET (QTY/UNIT)</th>
                             <th>OPR</th>
                             <th>REMARKS</th>
                             <th>CMD</th>
@@ -443,8 +472,9 @@
             </div>
         </div>
 
+        <!-- 2. Location Based Summary -->
         <div class="card summary-card">
-            <h3>LOGISTICS SUMMARY</h3>
+            <div class="card-header"><h3>SUMMARY PER ZONE</h3></div>
             <div class="table-responsive">
                 <table class="summary-table" id="summaryTable">
                     <thead>
@@ -458,6 +488,26 @@
                     <tbody></tbody>
                 </table>
             </div>
+        </div>
+
+        <!-- 3. Global Grand Total Summary -->
+        <div class="card global-summary-card">
+            <div class="card-header">
+                <h3>GLOBAL SUMMARY</h3>
+            </div>
+            <div class="table-responsive">
+                <table class="summary-table" id="globalSummaryTable">
+                    <thead>
+                        <tr>
+                            <th>ASSET / MEDICINE</th>
+                            <th>GRAND TOTAL</th>
+                            <th>UNIT</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+            <button class="btn btn-import" style="width:100%; margin-top:15px;" onclick="openModal('pendingModal')">VIEW PENDING DETAILS</button>
         </div>
     </div>
 </div>
@@ -614,7 +664,7 @@
                 <td>${rec.government}</td>
                 <td><span style="font-weight: bold;">${rec.medicine}</span> <br> <span class="tag-qty">${rec.quantity}</span> <span style="font-size:11px;">${rec.uom}</span></td>
                 <td>${rec.processedBy}</td>
-                <td style="font-size: 11px;">${rec.remarks || '--'}</td>
+                <td style="font-size: 11px; white-space: normal; min-width: 100px;">${rec.remarks || '--'}</td>
                 <td><button class="delete-btn" onclick="deleteData('${rec.id}')">X</button></td>
             `;
             tbody.appendChild(tr);
@@ -623,16 +673,24 @@
         checkAlerts();
     }
 
-    function renderSummaryTable() {
-        const tbody = document.querySelector('#summaryTable tbody');
-        const pendingTbody = document.querySelector('#pendingTableModal tbody');
-        tbody.innerHTML = '';
-        pendingTbody.innerHTML = '';
+    function renderSummaryTables() {
+        const locTbody = document.querySelector('#summaryTable tbody');
+        const globalTbody = document.querySelector('#globalSummaryTable tbody');
+        const modalTbody = document.querySelector('#pendingTableModal tbody');
+        
+        locTbody.innerHTML = '';
+        globalTbody.innerHTML = '';
+        modalTbody.innerHTML = '';
 
-        if (records.length === 0) return;
+        if (records.length === 0) {
+            locTbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">NO DATA</td></tr>';
+            globalTbody.innerHTML = '<tr><td colspan="3" style="text-align:center;">NO DATA</td></tr>';
+            document.getElementById('pendingCount').innerText = "0";
+            return;
+        }
 
         const summaryMap = {};
-        const globalMedMap = {}; // For Pending Meds Modal (All locations combined)
+        const globalMedMap = {};
 
         records.forEach((rec) => {
             const loc = (rec.location || "").trim().toUpperCase();
@@ -640,7 +698,7 @@
             const currentUom = (rec.uom || "").trim().toUpperCase();
             const qty = parseFloat(rec.quantity) || 0;
             
-            // For Location Summary
+            // 1. Map for Location Summary
             if (!summaryMap[loc]) summaryMap[loc] = {};
             if (!summaryMap[loc][medName]) {
                 summaryMap[loc][medName] = { uom: currentUom, totalQty: 0 };
@@ -652,18 +710,20 @@
             }
             summaryMap[loc][medName].totalQty += qty;
 
-            // For Global Pending Summary
+            // 2. Map for Global Summary (All Branches Combined)
             if(!globalMedMap[medName]) {
                 globalMedMap[medName] = { totalQty: 0, uom: currentUom, locations: new Set() };
             } else {
                 let gUomArr = globalMedMap[medName].uom.split(" / ");
-                if(currentUom !== "" && !gUomArr.includes(currentUom)) globalMedMap[medName].uom += " / " + currentUom;
+                if(currentUom !== "" && !gUomArr.includes(currentUom)) {
+                    globalMedMap[medName].uom += " / " + currentUom;
+                }
             }
             globalMedMap[medName].totalQty += qty;
             globalMedMap[medName].locations.add(loc);
         });
 
-        // 1. Render Dashboard Location Summary
+        // Render Location Summary Table
         Object.keys(summaryMap).sort().forEach(loc => {
             const medsList = Object.keys(summaryMap[loc]).sort();
             medsList.forEach((med, index) => {
@@ -671,19 +731,28 @@
                 const tr = document.createElement('tr');
                 const locCell = index === 0 ? `<span class="tag-location">${loc}</span>` : `<span style="opacity: 0.1;">"</span>`;
                 tr.innerHTML = `<td>${locCell}</td><td><strong>${med}</strong></td><td><span class="tag-qty">${data.totalQty}</span></td><td>${data.uom}</td>`;
-                tbody.appendChild(tr);
+                locTbody.appendChild(tr);
             });
         });
 
-        // 2. Render Pending Modal Summary
+        // Render Global Summary & Modal
         const allMeds = Object.keys(globalMedMap).sort();
         document.getElementById('pendingCount').innerText = allMeds.length;
+        
         allMeds.forEach(med => {
             const data = globalMedMap[med];
-            const locs = Array.from(data.locations).join(", ");
-            const tr = document.createElement('tr');
-            tr.innerHTML = `<td><strong>${med}</strong></td><td><span class="tag-qty">${data.totalQty}</span></td><td>${data.uom}</td><td style="font-size:11px;">${locs}</td>`;
-            pendingTbody.appendChild(tr);
+            const locsArr = Array.from(data.locations).sort();
+            const locsStr = locsArr.map(l => `<span class="tag-location" style="font-size:9px; padding:2px 4px;">${l}</span>`).join(" ");
+            
+            // Append to Dashboard Global Card
+            const trGlobal = document.createElement('tr');
+            trGlobal.innerHTML = `<td><strong>${med}</strong></td><td><span class="tag-qty">${data.totalQty}</span></td><td>${data.uom}</td>`;
+            globalTbody.appendChild(trGlobal);
+
+            // Append to Pop-out Modal
+            const trModal = document.createElement('tr');
+            trModal.innerHTML = `<td><strong style="color:var(--accent-cyan);">${med}</strong></td><td><span class="tag-qty" style="font-size:18px;">${data.totalQty}</span></td><td>${data.uom}</td><td style="white-space:normal; min-width:150px;">${locsStr}</td>`;
+            modalTbody.appendChild(trModal);
         });
     }
 
@@ -749,7 +818,7 @@
         // STRICT DOSAGE VALIDATION
         const dosageRegex = /\b(MG|MCG|IU|G|ML|L|AMP|TAB|CAPS?|MEQ|M|KG|MM|CC|VIAL|BOX)\b/i;
         if (!dosageRegex.test(medicine)) {
-            alert("⚠️ SYSTEM HALT: BAWAL MAG PROCEED! MEDICINE MUST INCLUDE DOSAGE (e.g. 500MG, 10MCG, 100IU, etc.)");
+            alert("⚠️ SYSTEM HALT: BAWAL MAG PROCEED! MEDICINE MUST INCLUDE DOSAGE (e.g. 500MG, 10MCG, 100IU, TAB, CAP, etc.)");
             return;
         }
 
@@ -785,7 +854,7 @@
     function saveData() {
         localStorage.setItem('tacticalMedTracker', JSON.stringify(records));
         renderMasterTable();
-        renderSummaryTable();
+        renderSummaryTables();
     }
 
     function parseExcelDate(val) {
@@ -824,9 +893,9 @@
                 const med = cleanRow["MEDICINE"] || "";
                 
                 if (!pName || !med) return;
-
-                // Optional strict check on import (you can remove this if you want to allow imported data without dosage)
-                if(!dosageRegex.test(med)) return; 
+                
+                // Allow import to pass strict dosage check, or you can uncomment below to strictly filter excel imports too
+                // if(!dosageRegex.test(med)) return; 
 
                 const dateGL = cleanRow["DATE OF GL"] || cleanRow["DATE OF GURANTEE LETTER"] || "";
                 const dateExp = cleanRow["EXPIRATION OF GL"] || cleanRow["EXPARATION OF GURANTEE LETTER"] || "";
@@ -881,9 +950,9 @@
                 saveData();
                 loadSelect('location', 'locList'); // Refresh dropdowns
                 loadSelect('uom', 'uomList');
-                alert(`OPERATION SUCCESS: ${importedCount} VALID ASSETS INTEGRATED.`);
+                alert(`OPERATION SUCCESS: ${importedCount} ASSETS INTEGRATED.`);
             } else {
-                alert("IMPORT FAILED. VERIFY COLUMNS AND ENSURE MEDICINES HAVE DOSAGE.");
+                alert("IMPORT FAILED. VERIFY COLUMNS.");
             }
             event.target.value = '';
         };
@@ -912,12 +981,16 @@
         }));
 
         const summaryArr = [];
+        const globalArr = [];
         const summaryMap = {};
+        const globalMap = {};
         
         records.forEach((rec) => {
             const loc = rec.location.trim().toUpperCase();
             const medName = rec.medicine.trim().toUpperCase();
             const currentUom = rec.uom.trim().toUpperCase();
+            
+            // Zone Summary logic
             if (!summaryMap[loc]) summaryMap[loc] = {};
             if (!summaryMap[loc][medName]) summaryMap[loc][medName] = { "MEDICINE": medName, "UOM": currentUom, "TOTAL QTY": 0 };
             else {
@@ -925,23 +998,40 @@
                 if (currentUom !== "" && !existingUomArray.includes(currentUom)) summaryMap[loc][medName]["UOM"] += " / " + currentUom;
             }
             summaryMap[loc][medName]["TOTAL QTY"] += parseFloat(rec.quantity) || 0;
+
+            // Global Summary Logic
+            if (!globalMap[medName]) globalMap[medName] = { "MEDICINE": medName, "UOM": currentUom, "TOTAL QTY": 0 };
+            else {
+                let existingUomArrayG = globalMap[medName]["UOM"].split(" / ");
+                if (currentUom !== "" && !existingUomArrayG.includes(currentUom)) globalMap[medName]["UOM"] += " / " + currentUom;
+            }
+            globalMap[medName]["TOTAL QTY"] += parseFloat(rec.quantity) || 0;
         });
 
         Object.keys(summaryMap).sort().forEach(loc => {
             const meds = Object.values(summaryMap[loc]).sort((a, b) => a["MEDICINE"].localeCompare(b["MEDICINE"]));
             meds.forEach(m => {
-                summaryArr.push({ "AREA / LOCATION": loc, "MEDICINE": m["MEDICINE"], "TOTAL QUANTITY COMPUTED": m["TOTAL QTY"], "UOM": m["UOM"] });
+                summaryArr.push({ "AREA / LOCATION": loc, "MEDICINE": m["MEDICINE"], "TOTAL QTY": m["TOTAL QTY"], "UOM": m["UOM"] });
             });
         });
 
+        Object.values(globalMap).sort((a,b) => a["MEDICINE"].localeCompare(b["MEDICINE"])).forEach(m => {
+            globalArr.push({ "MEDICINE": m["MEDICINE"], "GRAND TOTAL QTY": m["TOTAL QTY"], "UOM": m["UOM"] });
+        });
+
         const workbook = XLSX.utils.book_new();
+        
         const wsMaster = XLSX.utils.json_to_sheet(masterData);
         wsMaster['!cols'] = [{wch: 20}, {wch: 20}, {wch: 30}, {wch: 15}, {wch: 15}, {wch: 15}, {wch: 25}, {wch: 10}, {wch: 10}, {wch: 20}];
         XLSX.utils.book_append_sheet(workbook, wsMaster, "Master Ledger");
 
         const wsSummary = XLSX.utils.json_to_sheet(summaryArr);
-        wsSummary['!cols'] = [{wch: 25}, {wch: 30}, {wch: 25}, {wch: 15}];
+        wsSummary['!cols'] = [{wch: 25}, {wch: 30}, {wch: 15}, {wch: 15}];
         XLSX.utils.book_append_sheet(workbook, wsSummary, "Location Summary");
+
+        const wsGlobal = XLSX.utils.json_to_sheet(globalArr);
+        wsGlobal['!cols'] = [{wch: 35}, {wch: 20}, {wch: 15}];
+        XLSX.utils.book_append_sheet(workbook, wsGlobal, "Global Grand Total");
 
         const dateStr = new Date().toISOString().split('T')[0];
         XLSX.writeFile(workbook, `Medic_Ops_Tracker_${dateStr}.xlsx`);
@@ -951,7 +1041,7 @@
     window.onload = function() {
         initOptions();
         renderMasterTable();
-        renderSummaryTable();
+        renderSummaryTables();
     };
 </script>
 
