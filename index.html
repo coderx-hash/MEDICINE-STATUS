@@ -447,19 +447,16 @@
 
     <!-- HUD WIDGETS (CLICKABLE) -->
     <div class="hud-container">
-        <!-- Clicking this opens the Global Pending Modal -->
         <div class="hud-box" onclick="openModal('pendingModal')" title="Click to view all pending assets">
             <div class="hud-title">TOTAL ASSET QUANTITY</div>
             <div class="hud-value" id="hudTotalQty">0</div>
         </div>
         
-        <!-- Clicking this opens the Alerts Modal -->
         <div class="hud-box alert" onclick="openModal('alertModal')" title="Click to view critical expirations">
             <div class="hud-title">CRITICAL ALERTS</div>
             <div class="hud-value" id="hudAlerts">0</div>
         </div>
         
-        <!-- Clicking this opens the Zones Modal -->
         <div class="hud-box zones" onclick="openModal('zonesModal')" title="Click to view Active Zones Summary">
             <div class="hud-title">ACTIVE ZONES</div>
             <div class="hud-value" id="hudZones">0</div>
@@ -623,7 +620,6 @@
                 el.className = "boot-line";
                 wrapper.appendChild(el);
                 
-                // Add the blinking cursor to the current line
                 const cursor = document.createElement("span");
                 cursor.className = "cursor";
                 
@@ -736,6 +732,20 @@
             localStorage.setItem(storageKey, JSON.stringify(options));
             loadSelect(elementId, storageKey);
         }
+    }
+
+    // --- BULLETPROOF DUPLICATE CHECKER ---
+    function checkDuplicate(pName, gDate, gov, loc, med) {
+        // This function strips time from dates and trims spaces from all strings to ensure perfect matching
+        const nDate = (d) => (d || "").split('T')[0]; 
+        
+        return records.some(rec => 
+            (rec.patientName || "").trim().toUpperCase() === (pName || "").trim().toUpperCase() &&
+            nDate(rec.glDate) === nDate(gDate) &&
+            (rec.government || "").trim().toUpperCase() === (gov || "").trim().toUpperCase() &&
+            (rec.location || "").trim().toUpperCase() === (loc || "").trim().toUpperCase() &&
+            (rec.medicine || "").trim().toUpperCase() === (med || "").trim().toUpperCase()
+        );
     }
 
     // --- CORE SYSTEM LOGIC ---
@@ -878,19 +888,16 @@
             globalMedMap[medName].locations.add(loc);
         });
 
-        // Render Zones Summary (Dashboard & Modal)
         Object.keys(summaryMap).sort().forEach(loc => {
             const medsList = Object.keys(summaryMap[loc]).sort();
             medsList.forEach((med, index) => {
                 const data = summaryMap[loc][med];
                 const locCell = index === 0 ? `<span class="tag-location">${loc}</span>` : `<span style="opacity: 0.1;">"</span>`;
                 
-                // Add to Dashboard Table
                 const trDash = document.createElement('tr');
                 trDash.innerHTML = `<td>${locCell}</td><td><strong>${med}</strong></td><td><span class="tag-qty">${data.totalQty}</span></td><td>${data.uom}</td>`;
                 locTbody.appendChild(trDash);
 
-                // Add to Zones Modal Table
                 const trMod = document.createElement('tr');
                 trMod.innerHTML = `<td>${locCell}</td><td><strong style="color:var(--accent-cyan);">${med}</strong></td><td><span class="tag-qty" style="font-size:18px;">${data.totalQty}</span></td><td>${data.uom}</td>`;
                 zonesModalTbody.appendChild(trMod);
@@ -944,7 +951,6 @@
             }
         });
 
-        // Update Clickable HUD
         document.getElementById('hudTotalQty').innerText = totalAssetQty;
         document.getElementById('hudAlerts').innerText = alertCount;
         document.getElementById('hudZones').innerText = activeZonesSet.size;
@@ -975,6 +981,14 @@
         if (!dosageRegex.test(medicine)) {
             alert("⚠️ SYSTEM HALT: BAWAL MAG PROCEED! MEDICINE MUST INCLUDE DOSAGE (e.g. 500MG, 10MCG, 100IU, TAB, CAP, etc.)");
             return;
+        }
+
+        // --- MANUAL ENTRY DUPLICATE CHECK ---
+        if (checkDuplicate(patientName, glDate, government, location, medicine)) {
+            const proceed = confirm(`⚠️ SYSTEM ALERT: DUPLICATE ENTRY DETECTED!\n\nMayroon nang kaparehas na record sa system:\n- PATIENT: ${patientName}\n- DATE: ${glDate}\n- GOV: ${government}\n- LOCATION: ${location}\n- MEDICINE: ${medicine}\n\nGusto mo bang ITULOY at I-SAVE pa rin ito?`);
+            if (!proceed) {
+                return; // User canceled
+            }
         }
 
         const newRecord = {
@@ -1038,6 +1052,7 @@
             }
 
             let importedCount = 0;
+            let duplicateSkippedCount = 0;
 
             jsonData.forEach(row => {
                 const cleanRow = {};
@@ -1074,6 +1089,17 @@
 
                 if (!finalUom) finalUom = "UNIT";
 
+                const parsedGLDate = parseExcelDate(dateGL);
+                
+                // --- BATCH IMPORT DUPLICATE CHECK ---
+                if (checkDuplicate(pName, parsedGLDate, gov, loc, med)) {
+                    const proceed = confirm(`⚠️ EXCEL BATCH IMPORT: DUPLICATE DETECTED!\n\nNasa system na ang record na ito:\n- PATIENT: ${pName}\n- DATE: ${parsedGLDate}\n- GOV: ${gov}\n- MEDICINE: ${med}\n\nGusto mo bang I-SAVE pa rin ito mula sa Excel?\n(Click OK to Add anyway, Cancel to Skip)`);
+                    if (!proceed) {
+                        duplicateSkippedCount++;
+                        return; // Skip this row
+                    }
+                }
+
                 let locOpt = JSON.parse(localStorage.getItem('locList'));
                 if(!locOpt.includes(loc.toUpperCase())) { locOpt.push(loc.toUpperCase()); localStorage.setItem('locList', JSON.stringify(locOpt)); }
                 
@@ -1083,7 +1109,7 @@
                 records.push({
                     id: Date.now().toString() + Math.random().toString(),
                     patientName: String(pName).trim().toUpperCase(),
-                    glDate: parseExcelDate(dateGL),
+                    glDate: parsedGLDate,
                     glExpiry: parseExcelDate(dateExp),
                     government: String(gov).trim().toUpperCase(),
                     location: String(loc).trim().toUpperCase(),
@@ -1096,13 +1122,13 @@
                 importedCount++;
             });
 
-            if (importedCount > 0) {
+            if (importedCount > 0 || duplicateSkippedCount > 0) {
                 saveData();
                 loadSelect('location', 'locList'); 
                 loadSelect('uom', 'uomList');
-                alert(`OPERATION SUCCESS: ${importedCount} ASSETS INTEGRATED.`);
+                alert(`IMPORT SUMMARY:\n\n✅ ${importedCount} ASSETS INTEGRATED.\n❌ ${duplicateSkippedCount} DUPLICATES SKIPPED.`);
             } else {
-                alert("IMPORT FAILED. VERIFY COLUMNS.");
+                alert("IMPORT FAILED OR ALL ITEMS SKIPPED.");
             }
             event.target.value = '';
         };
@@ -1181,7 +1207,6 @@
         wsGlobal['!cols'] = [{wch: 35}, {wch: 20}, {wch: 15}];
         XLSX.utils.book_append_sheet(workbook, wsGlobal, "Global Grand Total");
 
-        // Timestamp Logic for filename
         const now = new Date();
         const dateStr = now.toISOString().split('T')[0];
         const timeStr = String(now.getHours()).padStart(2, '0') + String(now.getMinutes()).padStart(2, '0');
