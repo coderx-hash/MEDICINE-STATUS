@@ -60,7 +60,7 @@
                 linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
             background-size: 20px 20px;
             transition: all 0.3s ease;
-            padding-bottom: 120px;
+            padding-bottom: 40px; /* Adjusted padding since floating bar is removed */
             overflow-x: hidden;
         }
 
@@ -157,7 +157,7 @@
             box-shadow: 0 4px 15px rgba(0,0,0,0.2);
             display: flex;
             flex-direction: column;
-            cursor: pointer; /* Makes it look clickable */
+            cursor: pointer;
             transition: transform 0.2s, box-shadow 0.2s;
         }
         .hud-box:hover {
@@ -280,7 +280,6 @@
         }
         .btn:active { transform: scale(0.95); }
         
-        /* Cyber Hover Effects */
         .btn:hover {
             box-shadow: 0 0 15px currentColor;
             text-shadow: 0 0 5px currentColor;
@@ -346,49 +345,6 @@
         .summary-card { border-top: 3px solid var(--accent-cyan); }
         .global-summary-card { border-top: 3px solid var(--accent-gold); }
 
-        /* FLOATING ACTION BAR & POP-OUTS */
-        .floating-bar {
-            position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            display: flex;
-            gap: 15px;
-            z-index: 1000;
-            width: 90%;
-            max-width: 800px;
-            justify-content: center;
-        }
-
-        .toast-btn {
-            padding: 12px 20px;
-            border: none;
-            border-radius: 50px;
-            font-family: var(--font-header);
-            font-size: 15px;
-            font-weight: bold;
-            cursor: pointer;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.5);
-            animation: bounce 2s infinite;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            color: #fff;
-            flex: 1;
-            text-align: center;
-            transition: 0.2s;
-        }
-        .toast-btn:hover { transform: scale(1.05); }
-
-        .toast-alert { background: var(--accent-red); }
-        .toast-pending { background: var(--accent-cyan); animation-delay: 1s;}
-
-        @keyframes bounce {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-8px); }
-        }
-
         /* MODALS */
         .modal {
             display: none; position: fixed; z-index: 2000; left: 0; top: 0; 
@@ -414,11 +370,9 @@
             .dashboard-grid { grid-template-columns: 1fr; }
         }
         @media (max-width: 768px) {
-            body { padding: 10px; padding-bottom: 140px; }
+            body { padding: 10px; }
             .top-nav { flex-direction: column; align-items: flex-start; }
             .form-grid { grid-template-columns: 1fr; }
-            .floating-bar { flex-direction: column; gap: 10px; bottom: 10px; }
-            .toast-btn { font-size: 13px; padding: 10px; animation: none; }
             h2 { font-size: 18px; }
             h3 { font-size: 16px; }
             #bootScreen { font-size: 16px; padding: 20px; }
@@ -432,16 +386,6 @@
     <div id="bootTextWrapper">
         <!-- Lines will be injected here -->
     </div>
-</div>
-
-<!-- Floating Pop-outs at the bottom -->
-<div class="floating-bar">
-    <button class="toast-btn toast-alert" id="btnAlertToast" onclick="openModal('alertModal')" style="display:none;">
-        ⚠️ MALAPIT NA MA-EXPIRED! CLICK THIS
-    </button>
-    <button class="toast-btn toast-pending" id="btnPendingToast" onclick="openModal('pendingModal')">
-        📦 GLOBAL PENDING (<span id="pendingCountBtn">0</span>) CLICK THIS
-    </button>
 </div>
 
 <!-- ALERT MODAL -->
@@ -682,7 +626,6 @@
                             bootScreen.style.opacity = "0";
                             setTimeout(() => {
                                 bootScreen.style.display = "none";
-                                // Remove cursor from DOM so it doesn't linger invisibly
                                 wrapper.innerHTML = ""; 
                             }, 500);
                         }, 800);
@@ -700,12 +643,10 @@
         }
         
         if (i < text.length) {
-            // Insert character right before the cursor
             const charNode = document.createTextNode(text.charAt(i));
             element.insertBefore(charNode, cursor);
             setTimeout(() => typeWriter(element, text, i + 1, cursor, callback), 20);
         } else {
-            // Remove cursor from this line once done typing
             if(cursor.parentNode) cursor.parentNode.removeChild(cursor);
             if (callback) callback();
         }
@@ -895,7 +836,6 @@
             locTbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">NO DATA</td></tr>';
             globalTbody.innerHTML = '<tr><td colspan="3" style="text-align:center;">NO DATA</td></tr>';
             zonesModalTbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">NO DATA</td></tr>';
-            document.getElementById('pendingCountBtn').innerText = "0";
             return;
         }
 
@@ -951,7 +891,6 @@
         });
 
         const allMeds = Object.keys(globalMedMap).sort();
-        document.getElementById('pendingCountBtn').innerText = allMeds.length;
         
         allMeds.forEach(med => {
             const data = globalMedMap[med];
@@ -1002,10 +941,6 @@
         document.getElementById('hudTotalQty').innerText = totalAssetQty;
         document.getElementById('hudAlerts').innerText = alertCount;
         document.getElementById('hudZones').innerText = activeZonesSet.size;
-
-        const toast = document.getElementById('btnAlertToast');
-        if (alertCount > 0) toast.style.display = 'flex';
-        else toast.style.display = 'none';
     }
 
     function openModal(id) { document.getElementById(id).style.display = "block"; }
