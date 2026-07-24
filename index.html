@@ -6,28 +6,47 @@
     <title>TACTICAL MEDICINE TRACKER O.S.</title>
     <!-- SheetJS for Excel Export and Import -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <!-- Google Fonts for Tactical UI -->
     <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
     <style>
         :root {
-            /* Tactical Dark Color Palette */
+            /* TACTICAL DARK THEME (DEFAULT) */
             --bg-base: #05090c;
             --bg-panel: #0d141b;
             --bg-input: #121c26;
             --border-dim: #1e2d3d;
             --border-bright: #3a536e;
-            
             --text-main: #c5d4e3;
             --text-muted: #64819e;
             --text-bright: #ffffff;
-            
             --accent-cyan: #00f0ff;
             --accent-gold: #ffb800;
             --accent-red: #ff2a2a;
             --accent-green: #00ff66;
+            --shadow-btn: rgba(0, 240, 255, 0.2);
+            --modal-bg: rgba(5, 9, 12, 0.95);
+            --grid-line: rgba(30, 45, 61, 0.3);
             
             --font-header: 'Rajdhani', sans-serif;
             --font-data: 'Share Tech Mono', monospace;
+        }
+
+        /* CLINICAL LIGHT THEME */
+        [data-theme="light"] {
+            --bg-base: #f4f6f8;
+            --bg-panel: #ffffff;
+            --bg-input: #ffffff;
+            --border-dim: #ced4da;
+            --border-bright: #adb5bd;
+            --text-main: #2c3e50;
+            --text-muted: #6c757d;
+            --text-bright: #1a252f;
+            --accent-cyan: #0056b3;
+            --accent-gold: #d39e00;
+            --accent-red: #dc3545;
+            --accent-green: #28a745;
+            --shadow-btn: rgba(0, 86, 179, 0.1);
+            --modal-bg: rgba(255, 255, 255, 0.95);
+            --grid-line: rgba(206, 212, 218, 0.3);
         }
 
         body {
@@ -36,12 +55,32 @@
             padding: 20px;
             background-color: var(--bg-base);
             color: var(--text-main);
-            /* Subtle grid background for tactical feel */
             background-image: 
-                linear-gradient(rgba(30, 45, 61, 0.1) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(30, 45, 61, 0.1) 1px, transparent 1px);
+                linear-gradient(var(--grid-line) 1px, transparent 1px),
+                linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
             background-size: 20px 20px;
+            transition: all 0.3s ease;
+            padding-bottom: 100px; /* Space for bottom popouts */
         }
+
+        .theme-toggle {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: var(--bg-panel);
+            border: 1px solid var(--accent-cyan);
+            color: var(--accent-cyan);
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: var(--font-header);
+            font-weight: bold;
+            font-size: 14px;
+            transition: 0.3s;
+            box-shadow: 0 0 10px var(--shadow-btn);
+            z-index: 1000;
+        }
+        .theme-toggle:hover { background: var(--accent-cyan); color: #fff; }
 
         h2, h3 {
             font-family: var(--font-header);
@@ -51,32 +90,22 @@
             letter-spacing: 2px;
             border-bottom: 1px solid var(--border-bright);
             padding-bottom: 10px;
-            text-shadow: 0 0 10px rgba(0, 240, 255, 0.3);
             display: flex;
             align-items: center;
         }
+        h2::before { content: "■"; color: var(--accent-cyan); margin-right: 10px; font-size: 18px; }
 
-        h2::before {
-            content: "■";
-            color: var(--accent-cyan);
-            margin-right: 10px;
-            font-size: 18px;
-        }
-
-        .container {
-            max-width: 1500px;
-            margin: 0 auto;
-        }
+        .container { max-width: 1500px; margin: 0 auto; margin-top: 40px;}
 
         .card {
-            background: rgba(13, 20, 27, 0.85);
-            backdrop-filter: blur(5px);
+            background: var(--bg-panel);
             padding: 20px;
             border-radius: 4px;
             border: 1px solid var(--border-dim);
             border-top: 3px solid var(--border-bright);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
             margin-bottom: 20px;
+            transition: all 0.3s;
         }
 
         .form-grid {
@@ -97,6 +126,11 @@
             letter-spacing: 1px;
         }
 
+        .input-group {
+            display: flex;
+            gap: 5px;
+        }
+
         input, select {
             width: 100%;
             padding: 10px 12px;
@@ -114,93 +148,58 @@
         input:focus, select:focus {
             outline: none;
             border-color: var(--accent-cyan);
-            box-shadow: 0 0 8px rgba(0, 240, 255, 0.2);
-            background-color: #172431;
+            box-shadow: 0 0 8px var(--shadow-btn);
         }
 
-        .btn-group {
-            display: flex;
-            gap: 12px;
-            flex-wrap: wrap;
-            border-top: 1px dashed var(--border-dim);
-            padding-top: 20px;
+        .btn-opt {
+            background: var(--bg-input);
+            border: 1px solid var(--border-dim);
+            color: var(--text-main);
+            padding: 0 10px;
+            cursor: pointer;
+            font-weight: bold;
+            border-radius: 2px;
+            transition: 0.2s;
         }
+        .btn-opt:hover { border-color: var(--accent-cyan); color: var(--accent-cyan); }
+        .btn-opt-del:hover { border-color: var(--accent-red); color: var(--accent-red); }
+
+        .btn-group { display: flex; gap: 12px; flex-wrap: wrap; border-top: 1px dashed var(--border-dim); padding-top: 20px; }
 
         .btn {
             padding: 12px 24px;
             border: 1px solid transparent;
             border-radius: 2px;
             cursor: pointer;
-            color: var(--bg-base);
             font-family: var(--font-header);
             font-weight: 700;
             font-size: 14px;
             text-transform: uppercase;
             letter-spacing: 2px;
             transition: all 0.2s;
-            position: relative;
-            overflow: hidden;
         }
-
         .btn:active { transform: scale(0.98); }
         
-        .btn-add { 
-            background-color: var(--accent-green); 
-            box-shadow: 0 0 10px rgba(0, 255, 102, 0.2);
-            flex: 1;
-        }
-        .btn-add:hover { background-color: #00cc52; box-shadow: 0 0 15px rgba(0, 255, 102, 0.4); }
+        .btn-add { background-color: var(--accent-green); color: #000; flex: 1; }
+        .btn-export { background-color: var(--accent-cyan); color: #fff; }
+        .btn-import { background-color: var(--accent-gold); color: #000; }
+        .btn-clear { background-color: transparent; border: 1px solid var(--accent-red); color: var(--accent-red); }
+        .btn-clear:hover { background-color: var(--accent-red); color: white; }
 
-        .btn-export { background-color: var(--accent-cyan); }
-        .btn-export:hover { background-color: #00c4d1; box-shadow: 0 0 15px rgba(0, 240, 255, 0.4); }
-
-        .btn-import { background-color: var(--accent-gold); }
-        .btn-import:hover { background-color: #d69a00; box-shadow: 0 0 15px rgba(255, 184, 0, 0.4); }
-
-        .btn-clear { 
-            background-color: transparent;
-            border: 1px solid var(--accent-red);
-            color: var(--accent-red);
-        }
-        .btn-clear:hover { 
-            background-color: var(--accent-red);
-            color: white;
-            box-shadow: 0 0 15px rgba(255, 42, 42, 0.4);
-        }
-
-        .dashboard-grid {
-            display: grid;
-            grid-template-columns: 2fr 1.2fr;
-            gap: 20px;
-        }
-
-        @media (max-width: 1200px) {
-            .dashboard-grid { grid-template-columns: 1fr; }
-        }
+        .dashboard-grid { display: grid; grid-template-columns: 2fr 1.2fr; gap: 20px; }
+        @media (max-width: 1200px) { .dashboard-grid { grid-template-columns: 1fr; } }
 
         .table-responsive {
             overflow-x: auto;
             max-height: 600px;
             overflow-y: auto;
             border: 1px solid var(--border-dim);
-            background: #0a1016;
+            background: var(--bg-input);
         }
 
-        /* Custom Scrollbar for tactical look */
-        ::-webkit-scrollbar { width: 8px; height: 8px; }
-        ::-webkit-scrollbar-track { background: var(--bg-base); }
-        ::-webkit-scrollbar-thumb { background: var(--border-bright); border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: var(--accent-cyan); }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            white-space: nowrap;
-            font-size: 13px;
-        }
-
+        table { width: 100%; border-collapse: collapse; white-space: nowrap; font-size: 13px; }
         th {
-            background-color: #0f1722;
+            background-color: var(--bg-panel);
             color: var(--accent-cyan);
             font-family: var(--font-header);
             font-size: 14px;
@@ -211,31 +210,15 @@
             top: 0;
             z-index: 10;
             border-bottom: 2px solid var(--accent-cyan);
-            letter-spacing: 1px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
         }
-
-        td {
-            padding: 12px;
-            border-bottom: 1px solid var(--border-dim);
-            color: var(--text-main);
-            font-family: var(--font-data);
-        }
-
-        tr:nth-child(even) { background-color: rgba(255, 255, 255, 0.01); }
+        td { padding: 12px; border-bottom: 1px solid var(--border-dim); color: var(--text-main); font-family: var(--font-data); }
+        tr:nth-child(even) { background-color: rgba(0, 0, 0, 0.02); }
         tr:hover { background-color: rgba(0, 240, 255, 0.05); }
 
-        /* Highlight classes for Auto-Filter Expiring */
-        .row-expired {
-            background-color: rgba(255, 42, 42, 0.1) !important;
-            border-left: 3px solid var(--accent-red);
-        }
-        .row-expiring {
-            background-color: rgba(255, 184, 0, 0.08) !important;
-            border-left: 3px solid var(--accent-gold);
-        }
+        .row-expired { background-color: rgba(255, 42, 42, 0.1) !important; border-left: 3px solid var(--accent-red); }
+        .row-expiring { background-color: rgba(255, 184, 0, 0.08) !important; border-left: 3px solid var(--accent-gold); }
 
-        .tag-location {
+        .tag-location, .tag-uom {
             background-color: rgba(0, 240, 255, 0.1);
             color: var(--accent-cyan);
             padding: 4px 8px;
@@ -243,80 +226,122 @@
             font-family: var(--font-header);
             font-weight: 700;
             font-size: 12px;
-            display: inline-block;
             border: 1px solid rgba(0, 240, 255, 0.3);
         }
+        .tag-qty { font-weight: bold; color: var(--accent-gold); font-size: 15px; }
 
-        .tag-qty {
+        .delete-btn { background-color: transparent; color: var(--accent-red); border: 1px solid var(--accent-red); padding: 4px 8px; border-radius: 2px; cursor: pointer; font-size: 11px; font-weight: bold; }
+        .delete-btn:hover { background-color: var(--accent-red); color: white; }
+
+        .summary-card { border-top: 3px solid var(--accent-gold); }
+
+        /* FLOATING ACTION BAR & POP-OUTS */
+        .floating-bar {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 15px;
+            z-index: 1000;
+        }
+
+        .toast-btn {
+            padding: 15px 25px;
+            border: none;
+            border-radius: 50px;
+            font-family: var(--font-header);
+            font-size: 16px;
             font-weight: bold;
-            color: var(--accent-gold);
-            font-size: 15px;
-            text-shadow: 0 0 5px rgba(255, 184, 0, 0.3);
-        }
-
-        .delete-btn {
-            background-color: transparent;
-            color: var(--accent-red);
-            border: 1px solid var(--accent-red);
-            padding: 6px 10px;
-            border-radius: 2px;
             cursor: pointer;
-            font-family: var(--font-header);
-            font-size: 11px;
-            font-weight: 700;
-            letter-spacing: 1px;
-            transition: all 0.2s;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+            animation: bounce 2s infinite;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #fff;
         }
 
-        .delete-btn:hover {
-            background-color: var(--accent-red);
-            color: white;
-            box-shadow: 0 0 10px rgba(255, 42, 42, 0.5);
+        .toast-alert { background: var(--accent-red); }
+        .toast-pending { background: var(--accent-cyan); animation-delay: 1s;}
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
         }
 
-        .summary-card {
-            border-top: 3px solid var(--accent-gold);
+        /* MODALS */
+        .modal {
+            display: none; 
+            position: fixed; 
+            z-index: 2000; 
+            left: 0; top: 0; 
+            width: 100%; height: 100%; 
+            background-color: rgba(0,0,0,0.8);
+            backdrop-filter: blur(5px);
         }
+        .modal-content {
+            background-color: var(--bg-panel);
+            margin: 5% auto; 
+            padding: 20px; 
+            border: 1px solid var(--accent-cyan);
+            width: 90%; 
+            max-width: 1000px;
+            border-radius: 4px;
+            color: var(--text-main);
+            box-shadow: 0 0 30px rgba(0,240,255,0.2);
+        }
+        .close-btn { color: var(--accent-red); float: right; font-size: 28px; font-weight: bold; cursor: pointer; }
+        .close-btn:hover { color: #fff; }
 
-        /* Tactical Expiration Alerts */
-        .tag-alert {
-            color: var(--bg-base);
-            padding: 2px 6px;
-            border-radius: 2px;
-            font-family: var(--font-header);
-            font-size: 10px;
-            font-weight: 700;
-            display: inline-block;
-            margin-top: 4px;
-            letter-spacing: 1px;
+        .alert-tag {
+            background: var(--accent-red);
+            color: white; padding: 2px 5px; border-radius: 2px; font-size: 10px; font-weight: bold;
         }
-
-        @keyframes alert-pulse {
-            0% { opacity: 1; box-shadow: 0 0 5px var(--accent-gold); }
-            50% { opacity: 0.7; box-shadow: 0 0 15px var(--accent-gold); }
-            100% { opacity: 1; box-shadow: 0 0 5px var(--accent-gold); }
-        }
-
-        @keyframes critical-pulse {
-            0% { opacity: 1; box-shadow: 0 0 5px var(--accent-red); }
-            50% { opacity: 0.8; box-shadow: 0 0 20px var(--accent-red); }
-            100% { opacity: 1; box-shadow: 0 0 5px var(--accent-red); }
-        }
-
-        .expiring-soon {
-            background-color: var(--accent-gold);
-            animation: alert-pulse 1.5s infinite;
-        }
-
-        .expired {
-            background-color: var(--accent-red);
-            color: white;
-            animation: critical-pulse 1s infinite;
-            border: 1px solid #ffaaaa;
-        }
+        .warning-tag { background: var(--accent-gold); color: black; padding: 2px 5px; border-radius: 2px; font-size: 10px; font-weight: bold; }
     </style>
 </head>
-<body>
+<body data-theme="dark">
+
+<button class="theme-toggle" onclick="toggleTheme()" id="themeBtn">🌞 SWITCH TO LIGHT MODE</button>
+
+<!-- Floating Pop-outs at the bottom -->
+<div class="floating-bar">
+    <button class="toast-btn toast-alert" id="btnAlertToast" onclick="openModal('alertModal')" style="display:none;">
+        ⚠️ ITO MALAPIT NA MA-EXPIRED! CLICK THIS
+    </button>
+    <button class="toast-btn toast-pending" id="btnPendingToast" onclick="openModal('pendingModal')">
+        📦 PENDING MEDICINES (<span id="pendingCount">0</span>)
+    </button>
+</div>
+
+<!-- ALERT MODAL (Expiring) -->
+<div id="alertModal" class="modal">
+    <div class="modal-content">
+        <span class="close-btn" onclick="closeModal('alertModal')">&times;</span>
+        <h2>⚠️ CRITICAL ALERT: EXPIRING GLs</h2>
+        <div class="table-responsive">
+            <table id="alertTable">
+                <thead><tr><th>STATUS</th><th>PATIENT</th><th>GL EXPIRATION</th><th>MEDICINE</th><th>ZONE</th></tr></thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- PENDING MEDICINES MODAL -->
+<div id="pendingModal" class="modal">
+    <div class="modal-content">
+        <span class="close-btn" onclick="closeModal('pendingModal')">&times;</span>
+        <h2>📦 ALL PENDING MEDICINES</h2>
+        <div class="table-responsive">
+            <table id="pendingTableModal">
+                <thead><tr><th>MEDICINE</th><th>TOTAL QTY</th><th>UNIT</th><th>LOCATION(S)</th></tr></thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+</div>
 
 <div class="container">
     <h2>SYS-COM: MEDICINE OPS TRACKER</h2>
@@ -337,42 +362,59 @@
                     <label>GL EXPIRATION</label>
                     <input type="date" id="glExpiry" required>
                 </div>
+                
+                <!-- DYNAMIC DROPDOWNS -->
                 <div>
                     <label>GOV BRANCH</label>
-                    <input type="text" id="government" placeholder="e.g. OP, PCSO" oninput="this.value = this.value.toUpperCase()" required>
+                    <div class="input-group">
+                        <select id="government"></select>
+                        <button type="button" class="btn-opt" onclick="addCustomOption('government', 'govList', 'Enter new Government Branch:')">+</button>
+                        <button type="button" class="btn-opt btn-opt-del" onclick="deleteCustomOption('government', 'govList')">-</button>
+                    </div>
                 </div>
                 <div>
                     <label>ZONE / LOCATION</label>
-                    <input type="text" id="location" placeholder="e.g. MANILA, LAGUNA" oninput="this.value = this.value.toUpperCase()" required>
+                    <div class="input-group">
+                        <select id="location"></select>
+                        <button type="button" class="btn-opt" onclick="addCustomOption('location', 'locList', 'Enter new Zone/Location:')">+</button>
+                        <button type="button" class="btn-opt btn-opt-del" onclick="deleteCustomOption('location', 'locList')">-</button>
+                    </div>
                 </div>
+                
                 <div>
                     <label>OPERATOR</label>
                     <input type="text" id="processedBy" placeholder="Nag process" oninput="this.value = this.value.toUpperCase()" required>
                 </div>
+                
+                <!-- DOSAGE VALIDATION APPLIED HERE -->
                 <div>
-                    <label>ASSET (MEDICINE)</label>
-                    <input type="text" id="medicine" placeholder="e.g. ANAGREBENE" oninput="this.value = this.value.toUpperCase()" required>
+                    <label>ASSET (MEDICINE w/ DOSAGE)</label>
+                    <input type="text" id="medicine" placeholder="e.g. PARACETAMOL 500MG" oninput="this.value = this.value.toUpperCase()" required>
                 </div>
+                
                 <div>
                     <label>QTY</label>
                     <input type="number" id="quantity" placeholder="18" min="1" required>
                 </div>
                 <div>
                     <label>UNIT</label>
-                    <input type="text" id="uom" placeholder="BOXES, VIAL" oninput="this.value = this.value.toUpperCase()" required>
+                    <div class="input-group">
+                        <select id="uom"></select>
+                        <button type="button" class="btn-opt" onclick="addCustomOption('uom', 'uomList', 'Enter new Unit (UOM):')">+</button>
+                        <button type="button" class="btn-opt btn-opt-del" onclick="deleteCustomOption('uom', 'uomList')">-</button>
+                    </div>
                 </div>
                 <div>
                     <label>INTEL / REMARKS</label>
                     <input type="text" id="remarks" placeholder="Optional notes" oninput="this.value = this.value.toUpperCase()">
                 </div>
             </div>
+            
             <div class="btn-group">
                 <button type="button" class="btn btn-add" onclick="addData()">[+] INITIALIZE ENTRY</button>
                 <button type="button" class="btn btn-export" onclick="exportToExcel()">EXPORT REGISTRY</button>
-                
                 <input type="file" id="fileInput" accept=".xlsx, .xls" style="display: none;" onchange="importExcel(event)">
-                <button type="button" class="btn btn-import" onclick="document.getElementById('fileInput').click()">IMPORT BATCH (EXCEL)</button>
-
+                <button type="button" class="btn btn-import" onclick="document.getElementById('fileInput').click()">IMPORT BATCH</button>
                 <button type="button" class="btn btn-clear" onclick="clearData()">PURGE SYSTEM</button>
             </div>
         </form>
@@ -380,10 +422,8 @@
 
     <!-- Main Content Area -->
     <div class="dashboard-grid">
-        
-        <!-- Detailed Master Table -->
         <div class="card">
-            <h3>MASTER LEDGER [AUTO-SORTED BY CRITICAL EXPIRATION]</h3>
+            <h3>MASTER LEDGER</h3>
             <div class="table-responsive">
                 <table id="dataTable">
                     <thead>
@@ -403,12 +443,8 @@
             </div>
         </div>
 
-        <!-- Summary Panel Grouped By Location -->
         <div class="card summary-card">
             <h3>LOGISTICS SUMMARY</h3>
-            <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 15px; font-family: var(--font-data);">
-                > AGGREGATING IDENTICAL ASSETS PER ZONE...
-            </p>
             <div class="table-responsive">
                 <table class="summary-table" id="summaryTable">
                     <thead>
@@ -423,11 +459,81 @@
                 </table>
             </div>
         </div>
-
     </div>
 </div>
 
 <script>
+    // --- THEME MANAGEMENT ---
+    function toggleTheme() {
+        const body = document.body;
+        const btn = document.getElementById('themeBtn');
+        if(body.getAttribute('data-theme') === 'dark') {
+            body.setAttribute('data-theme', 'light');
+            btn.innerHTML = "🌙 SWITCH TO DARK MODE";
+        } else {
+            body.setAttribute('data-theme', 'dark');
+            btn.innerHTML = "🌞 SWITCH TO LIGHT MODE";
+        }
+    }
+
+    // --- DYNAMIC SELECT OPTIONS MANAGEMENT ---
+    const defaultLocs = ["MANILA", "LAGUNA", "BATANGAS", "ALBAY"];
+    const defaultGovs = ["OP", "PCSO MAIN"];
+    const defaultUoms = ["BOXES", "VIAL", "PCS"];
+
+    function initOptions() {
+        if(!localStorage.getItem('locList')) localStorage.setItem('locList', JSON.stringify(defaultLocs));
+        if(!localStorage.getItem('govList')) localStorage.setItem('govList', JSON.stringify(defaultGovs));
+        if(!localStorage.getItem('uomList')) localStorage.setItem('uomList', JSON.stringify(defaultUoms));
+        
+        loadSelect('location', 'locList');
+        loadSelect('government', 'govList');
+        loadSelect('uom', 'uomList');
+    }
+
+    function loadSelect(elementId, storageKey) {
+        const select = document.getElementById(elementId);
+        const options = JSON.parse(localStorage.getItem(storageKey));
+        select.innerHTML = '';
+        options.sort().forEach(opt => {
+            const el = document.createElement('option');
+            el.value = opt;
+            el.textContent = opt;
+            select.appendChild(el);
+        });
+    }
+
+    function addCustomOption(elementId, storageKey, promptText) {
+        const newVal = prompt(promptText);
+        if(newVal && newVal.trim() !== '') {
+            const cleanVal = newVal.trim().toUpperCase();
+            let options = JSON.parse(localStorage.getItem(storageKey));
+            if(!options.includes(cleanVal)) {
+                options.push(cleanVal);
+                localStorage.setItem(storageKey, JSON.stringify(options));
+                loadSelect(elementId, storageKey);
+                document.getElementById(elementId).value = cleanVal;
+            } else {
+                alert("Option already exists!");
+                document.getElementById(elementId).value = cleanVal;
+            }
+        }
+    }
+
+    function deleteCustomOption(elementId, storageKey) {
+        const select = document.getElementById(elementId);
+        const valToDelete = select.value;
+        if(!valToDelete) return;
+        
+        if(confirm(`Are you sure you want to delete '${valToDelete}' from choices?`)) {
+            let options = JSON.parse(localStorage.getItem(storageKey));
+            options = options.filter(opt => opt !== valToDelete);
+            localStorage.setItem(storageKey, JSON.stringify(options));
+            loadSelect(elementId, storageKey);
+        }
+    }
+
+    // --- CORE SYSTEM LOGIC ---
     let records = JSON.parse(localStorage.getItem('tacticalMedTracker')) || [];
 
     function formatDate(dateString) {
@@ -443,24 +549,20 @@
         tbody.innerHTML = '';
 
         if (records.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color: var(--text-muted); padding: 30px; font-family: var(--font-header); letter-spacing: 2px;">NO ACTIVE ENTRIES DETECTED.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding: 30px;">NO ACTIVE ENTRIES DETECTED.</td></tr>';
+            checkAlerts();
             return;
         }
 
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
-        // --- NEW AUTO-FILTER & SORTING LOGIC ---
-        // 1. Expired / Expiring Soon items go to the very top.
-        // 2. Then sorted by nearest expiration date.
-        // 3. Normal items go below, sorted by Location -> Patient Name.
         let sortedRecords = [...records].sort((a, b) => {
             let daysA = Infinity;
             if (a.glExpiry) {
                 const expA = new Date(a.glExpiry);
                 if (!isNaN(expA.getTime())) daysA = Math.ceil((expA - today) / (1000 * 60 * 60 * 24));
             }
-
             let daysB = Infinity;
             if (b.glExpiry) {
                 const expB = new Date(b.glExpiry);
@@ -469,21 +571,12 @@
 
             const alertA = daysA <= 25;
             const alertB = daysB <= 25;
-
-            // Priority to Alerts
             if (alertA && !alertB) return -1;
             if (!alertA && alertB) return 1;
+            if (alertA && alertB) { if (daysA !== daysB) return daysA - daysB; }
 
-            // If both are in alert state, sort by who is expiring soonest/most expired
-            if (alertA && alertB) {
-                if (daysA !== daysB) return daysA - daysB;
-            }
-
-            // Normal sorting for non-alert items
             if (a.location === b.location) {
-                if (a.government === b.government) {
-                    return a.patientName.localeCompare(b.patientName);
-                }
+                if (a.government === b.government) return a.patientName.localeCompare(b.patientName);
                 return a.government.localeCompare(b.government);
             }
             return a.location.localeCompare(b.location);
@@ -491,10 +584,7 @@
 
         sortedRecords.forEach((rec) => {
             const tr = document.createElement('tr');
-            
-            // --- EXPIRATION STYLING ---
             let expiryStatusHTML = "";
-            let expiryDateStyle = "color: var(--text-muted);";
             let rowClass = "";
 
             if (rec.glExpiry) {
@@ -504,12 +594,10 @@
                     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
                     if (diffDays < 0) {
-                        expiryStatusHTML = `<br><span class="tag-alert expired">CRITICAL: EXPIRED</span>`;
-                        expiryDateStyle = `color: var(--accent-red); font-weight: bold;`;
+                        expiryStatusHTML = `<br><span class="alert-tag">EXPIRED</span>`;
                         rowClass = "row-expired";
                     } else if (diffDays <= 25) {
-                        expiryStatusHTML = `<br><span class="tag-alert expiring-soon">WARNING: ${diffDays} DAY(S) LEFT</span>`;
-                        expiryDateStyle = `color: var(--accent-gold); font-weight: bold;`;
+                        expiryStatusHTML = `<br><span class="warning-tag">EXP IN ${diffDays}D</span>`;
                         rowClass = "row-expiring";
                     }
                 }
@@ -521,76 +609,124 @@
                 <td><span class="tag-location">${rec.location}</span></td>
                 <td><strong style="color: var(--text-bright);">${rec.patientName}</strong></td>
                 <td style="font-size: 11px;">
-                    <span style="color: var(--text-muted);">${formatDate(rec.glDate)}</span><br>
-                    <span style="${expiryDateStyle}">EXP: ${formatDate(rec.glExpiry)}</span>
-                    ${expiryStatusHTML}
+                    ${formatDate(rec.glDate)} <br> EXP: ${formatDate(rec.glExpiry)} ${expiryStatusHTML}
                 </td>
                 <td>${rec.government}</td>
-                <td><span style="color:#ecf0f1; font-weight: bold;">${rec.medicine}</span> <br> <span class="tag-qty">${rec.quantity}</span> <span style="font-size:11px; color: var(--text-muted);">${rec.uom}</span></td>
-                <td style="color: var(--text-muted);">${rec.processedBy}</td>
-                <td style="font-size: 11px; color: #888;">${rec.remarks || '--'}</td>
+                <td><span style="font-weight: bold;">${rec.medicine}</span> <br> <span class="tag-qty">${rec.quantity}</span> <span style="font-size:11px;">${rec.uom}</span></td>
+                <td>${rec.processedBy}</td>
+                <td style="font-size: 11px;">${rec.remarks || '--'}</td>
                 <td><button class="delete-btn" onclick="deleteData('${rec.id}')">X</button></td>
             `;
             tbody.appendChild(tr);
         });
+        
+        checkAlerts();
     }
 
     function renderSummaryTable() {
         const tbody = document.querySelector('#summaryTable tbody');
+        const pendingTbody = document.querySelector('#pendingTableModal tbody');
         tbody.innerHTML = '';
+        pendingTbody.innerHTML = '';
 
-        if (records.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color: var(--text-muted); padding: 20px; font-family: var(--font-header);">AWAITING DATA INPUT</td></tr>';
-            return;
-        }
+        if (records.length === 0) return;
 
         const summaryMap = {};
+        const globalMedMap = {}; // For Pending Meds Modal (All locations combined)
 
         records.forEach((rec) => {
             const loc = (rec.location || "").trim().toUpperCase();
             const medName = (rec.medicine || "").trim().toUpperCase();
             const currentUom = (rec.uom || "").trim().toUpperCase();
+            const qty = parseFloat(rec.quantity) || 0;
             
-            const medKey = medName;
-            
+            // For Location Summary
             if (!summaryMap[loc]) summaryMap[loc] = {};
-            
-            if (!summaryMap[loc][medKey]) {
-                summaryMap[loc][medKey] = {
-                    medicine: medName,
-                    uom: currentUom,
-                    totalQty: 0
-                };
+            if (!summaryMap[loc][medName]) {
+                summaryMap[loc][medName] = { uom: currentUom, totalQty: 0 };
             } else {
-                let existingUomArray = summaryMap[loc][medKey].uom.split(" / ");
+                let existingUomArray = summaryMap[loc][medName].uom.split(" / ");
                 if (currentUom !== "" && !existingUomArray.includes(currentUom)) {
-                    summaryMap[loc][medKey].uom += " / " + currentUom;
+                    summaryMap[loc][medName].uom += " / " + currentUom;
                 }
             }
-            
-            summaryMap[loc][medKey].totalQty += parseFloat(rec.quantity) || 0;
+            summaryMap[loc][medName].totalQty += qty;
+
+            // For Global Pending Summary
+            if(!globalMedMap[medName]) {
+                globalMedMap[medName] = { totalQty: 0, uom: currentUom, locations: new Set() };
+            } else {
+                let gUomArr = globalMedMap[medName].uom.split(" / ");
+                if(currentUom !== "" && !gUomArr.includes(currentUom)) globalMedMap[medName].uom += " / " + currentUom;
+            }
+            globalMedMap[medName].totalQty += qty;
+            globalMedMap[medName].locations.add(loc);
         });
 
-        const sortedLocations = Object.keys(summaryMap).sort();
-
-        sortedLocations.forEach(loc => {
-            const medsList = Object.values(summaryMap[loc]).sort((a, b) => a.medicine.localeCompare(b.medicine));
-            
-            medsList.forEach((item, index) => {
+        // 1. Render Dashboard Location Summary
+        Object.keys(summaryMap).sort().forEach(loc => {
+            const medsList = Object.keys(summaryMap[loc]).sort();
+            medsList.forEach((med, index) => {
+                const data = summaryMap[loc][med];
                 const tr = document.createElement('tr');
-                const locCell = index === 0 
-                    ? `<span class="tag-location">${loc}</span>` 
-                    : `<span style="opacity: 0.1;">"</span>`;
-
-                tr.innerHTML = `
-                    <td>${locCell}</td>
-                    <td><strong style="color: var(--text-bright);">${item.medicine}</strong></td>
-                    <td><span class="tag-qty">${item.totalQty}</span></td>
-                    <td style="color: var(--text-muted);">${item.uom}</td>
-                `;
+                const locCell = index === 0 ? `<span class="tag-location">${loc}</span>` : `<span style="opacity: 0.1;">"</span>`;
+                tr.innerHTML = `<td>${locCell}</td><td><strong>${med}</strong></td><td><span class="tag-qty">${data.totalQty}</span></td><td>${data.uom}</td>`;
                 tbody.appendChild(tr);
             });
         });
+
+        // 2. Render Pending Modal Summary
+        const allMeds = Object.keys(globalMedMap).sort();
+        document.getElementById('pendingCount').innerText = allMeds.length;
+        allMeds.forEach(med => {
+            const data = globalMedMap[med];
+            const locs = Array.from(data.locations).join(", ");
+            const tr = document.createElement('tr');
+            tr.innerHTML = `<td><strong>${med}</strong></td><td><span class="tag-qty">${data.totalQty}</span></td><td>${data.uom}</td><td style="font-size:11px;">${locs}</td>`;
+            pendingTbody.appendChild(tr);
+        });
+    }
+
+    function checkAlerts() {
+        const tbody = document.querySelector('#alertTable tbody');
+        tbody.innerHTML = '';
+        let alertCount = 0;
+        
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        records.forEach(rec => {
+            if (rec.glExpiry) {
+                const expDate = new Date(rec.glExpiry);
+                if (!isNaN(expDate.getTime())) {
+                    const diffDays = Math.ceil((expDate - today) / (1000 * 60 * 60 * 24));
+                    if (diffDays <= 25) {
+                        alertCount++;
+                        const tr = document.createElement('tr');
+                        let statHTML = diffDays < 0 ? `<span class="alert-tag">EXPIRED</span>` : `<span class="warning-tag">IN ${diffDays}D</span>`;
+                        tr.innerHTML = `<td>${statHTML}</td><td>${rec.patientName}</td><td>${formatDate(rec.glExpiry)}</td><td>${rec.medicine}</td><td>${rec.location}</td>`;
+                        tbody.appendChild(tr);
+                    }
+                }
+            }
+        });
+
+        const toast = document.getElementById('btnAlertToast');
+        if (alertCount > 0) {
+            toast.style.display = 'flex';
+        } else {
+            toast.style.display = 'none';
+        }
+    }
+
+    function openModal(id) { document.getElementById(id).style.display = "block"; }
+    function closeModal(id) { document.getElementById(id).style.display = "none"; }
+    
+    // Close modal if clicked outside
+    window.onclick = function(event) {
+        if (event.target.className === "modal") {
+            event.target.style.display = "none";
+        }
     }
 
     function addData() {
@@ -610,6 +746,13 @@
             return;
         }
 
+        // STRICT DOSAGE VALIDATION
+        const dosageRegex = /\b(MG|MCG|IU|G|ML|L|AMP|TAB|CAPS?|MEQ|M|KG|MM|CC|VIAL|BOX)\b/i;
+        if (!dosageRegex.test(medicine)) {
+            alert("⚠️ SYSTEM HALT: BAWAL MAG PROCEED! MEDICINE MUST INCLUDE DOSAGE (e.g. 500MG, 10MCG, 100IU, etc.)");
+            return;
+        }
+
         const newRecord = {
             id: Date.now().toString(),
             patientName, glDate, glExpiry, government, location, processedBy, medicine, quantity, uom, remarks
@@ -621,7 +764,6 @@
         document.getElementById('patientName').value = '';
         document.getElementById('medicine').value = '';
         document.getElementById('quantity').value = '';
-        document.getElementById('uom').value = '';
         document.getElementById('remarks').value = '';
         document.getElementById('patientName').focus();
     }
@@ -648,13 +790,9 @@
 
     function parseExcelDate(val) {
         if (!val) return '';
-        if (val instanceof Date) {
-            return val.toISOString().split('T')[0];
-        }
+        if (val instanceof Date) return val.toISOString().split('T')[0];
         const d = new Date(val);
-        if (!isNaN(d.getTime())) {
-            return d.toISOString().split('T')[0];
-        }
+        if (!isNaN(d.getTime())) return d.toISOString().split('T')[0];
         return String(val);
     }
 
@@ -666,28 +804,29 @@
         reader.onload = function(e) {
             const data = new Uint8Array(e.target.result);
             const workbook = XLSX.read(data, {type: 'array', cellDates: true});
-
             const sheetName = workbook.SheetNames.includes("Sheet1") ? "Sheet1" : workbook.SheetNames[0];
             const worksheet = workbook.Sheets[sheetName];
             const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
 
             if (jsonData.length === 0) {
-                alert("ERROR: EMPTY OR INVALID EXCEL STRUCTURE DETECTED.");
+                alert("ERROR: EMPTY OR INVALID EXCEL.");
                 return;
             }
 
             let importedCount = 0;
+            const dosageRegex = /\b(MG|MCG|IU|G|ML|L|AMP|TAB|CAPS?|MEQ|M|KG|MM|CC|VIAL|BOX)\b/i;
 
             jsonData.forEach(row => {
                 const cleanRow = {};
-                for (let key in row) {
-                    cleanRow[key.trim().toUpperCase()] = row[key];
-                }
+                for (let key in row) cleanRow[key.trim().toUpperCase()] = row[key];
 
                 const pName = cleanRow["PATIENT NAME"] || cleanRow["NAME OF THE PATIENT"] || "";
                 const med = cleanRow["MEDICINE"] || "";
                 
                 if (!pName || !med) return;
+
+                // Optional strict check on import (you can remove this if you want to allow imported data without dosage)
+                if(!dosageRegex.test(med)) return; 
 
                 const dateGL = cleanRow["DATE OF GL"] || cleanRow["DATE OF GURANTEE LETTER"] || "";
                 const dateExp = cleanRow["EXPIRATION OF GL"] || cleanRow["EXPARATION OF GURANTEE LETTER"] || "";
@@ -703,13 +842,8 @@
                 if (!cleanRow["UOM"]) {
                     let parsedNum = parseFloat(rawQty);
                     if (isNaN(parsedNum)) {
-                        if (rawQty.includes("I VIAL")) {
-                            finalQty = 1;
-                            finalUom = "VIAL";
-                        } else {
-                            finalQty = 1;
-                            finalUom = rawQty;
-                        }
+                        if (rawQty.includes("I VIAL")) { finalQty = 1; finalUom = "VIAL"; } 
+                        else { finalQty = 1; finalUom = rawQty; }
                     } else {
                         finalQty = parsedNum;
                         finalUom = rawQty.replace(/^[0-9.]+\s*/, ''); 
@@ -720,7 +854,14 @@
 
                 if (!finalUom) finalUom = "UNIT";
 
-                const newRecord = {
+                // Automatically add imported locations, govs, and uoms to dropdown choices
+                let locOpt = JSON.parse(localStorage.getItem('locList'));
+                if(!locOpt.includes(loc.toUpperCase())) { locOpt.push(loc.toUpperCase()); localStorage.setItem('locList', JSON.stringify(locOpt)); }
+                
+                let uomOpt = JSON.parse(localStorage.getItem('uomList'));
+                if(!uomOpt.includes(finalUom.toUpperCase())) { uomOpt.push(finalUom.toUpperCase()); localStorage.setItem('uomList', JSON.stringify(uomOpt)); }
+
+                records.push({
                     id: Date.now().toString() + Math.random().toString(),
                     patientName: String(pName).trim().toUpperCase(),
                     glDate: parseExcelDate(dateGL),
@@ -732,34 +873,28 @@
                     quantity: finalQty,
                     uom: finalUom,
                     remarks: String(remarks).trim().toUpperCase()
-                };
-
-                records.push(newRecord);
+                });
                 importedCount++;
             });
 
             if (importedCount > 0) {
                 saveData();
-                alert(`OPERATION SUCCESS: ${importedCount} ASSETS INTEGRATED TO DATABASE.`);
+                loadSelect('location', 'locList'); // Refresh dropdowns
+                loadSelect('uom', 'uomList');
+                alert(`OPERATION SUCCESS: ${importedCount} VALID ASSETS INTEGRATED.`);
             } else {
-                alert("IMPORT FAILED. VERIFY 'MEDICINE' AND 'PATIENT NAME' COLUMNS.");
+                alert("IMPORT FAILED. VERIFY COLUMNS AND ENSURE MEDICINES HAVE DOSAGE.");
             }
-
             event.target.value = '';
         };
         reader.readAsArrayBuffer(file);
     }
 
     function exportToExcel() {
-        if (records.length === 0) {
-            alert("NO DATA FOR EXPORT.");
-            return;
-        }
+        if (records.length === 0) { alert("NO DATA FOR EXPORT."); return; }
 
         let sortedRecords = [...records].sort((a, b) => {
-            if (a.location === b.location) {
-                return a.patientName.localeCompare(b.patientName);
-            }
+            if (a.location === b.location) return a.patientName.localeCompare(b.patientName);
             return a.location.localeCompare(b.location);
         });
 
@@ -783,36 +918,23 @@
             const loc = rec.location.trim().toUpperCase();
             const medName = rec.medicine.trim().toUpperCase();
             const currentUom = rec.uom.trim().toUpperCase();
-            
-            const medKey = medName;
-            
             if (!summaryMap[loc]) summaryMap[loc] = {};
-            if (!summaryMap[loc][medKey]) {
-                summaryMap[loc][medKey] = { "MEDICINE": medName, "UOM": currentUom, "TOTAL QTY": 0 };
-            } else {
-                let existingUomArray = summaryMap[loc][medKey]["UOM"].split(" / ");
-                if (currentUom !== "" && !existingUomArray.includes(currentUom)) {
-                    summaryMap[loc][medKey]["UOM"] += " / " + currentUom;
-                }
+            if (!summaryMap[loc][medName]) summaryMap[loc][medName] = { "MEDICINE": medName, "UOM": currentUom, "TOTAL QTY": 0 };
+            else {
+                let existingUomArray = summaryMap[loc][medName]["UOM"].split(" / ");
+                if (currentUom !== "" && !existingUomArray.includes(currentUom)) summaryMap[loc][medName]["UOM"] += " / " + currentUom;
             }
-            
-            summaryMap[loc][medKey]["TOTAL QTY"] += parseFloat(rec.quantity) || 0;
+            summaryMap[loc][medName]["TOTAL QTY"] += parseFloat(rec.quantity) || 0;
         });
 
         Object.keys(summaryMap).sort().forEach(loc => {
             const meds = Object.values(summaryMap[loc]).sort((a, b) => a["MEDICINE"].localeCompare(b["MEDICINE"]));
             meds.forEach(m => {
-                summaryArr.push({
-                    "AREA / LOCATION": loc,
-                    "MEDICINE": m["MEDICINE"],
-                    "TOTAL QUANTITY COMPUTED": m["TOTAL QTY"],
-                    "UOM": m["UOM"]
-                });
+                summaryArr.push({ "AREA / LOCATION": loc, "MEDICINE": m["MEDICINE"], "TOTAL QUANTITY COMPUTED": m["TOTAL QTY"], "UOM": m["UOM"] });
             });
         });
 
         const workbook = XLSX.utils.book_new();
-
         const wsMaster = XLSX.utils.json_to_sheet(masterData);
         wsMaster['!cols'] = [{wch: 20}, {wch: 20}, {wch: 30}, {wch: 15}, {wch: 15}, {wch: 15}, {wch: 25}, {wch: 10}, {wch: 10}, {wch: 20}];
         XLSX.utils.book_append_sheet(workbook, wsMaster, "Master Ledger");
@@ -825,8 +947,12 @@
         XLSX.writeFile(workbook, `Medic_Ops_Tracker_${dateStr}.xlsx`);
     }
 
-    renderMasterTable();
-    renderSummaryTable();
+    // INITIALIZATION
+    window.onload = function() {
+        initOptions();
+        renderMasterTable();
+        renderSummaryTable();
+    };
 </script>
 
 </body>
