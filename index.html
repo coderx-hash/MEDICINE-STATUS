@@ -288,6 +288,9 @@
 
         .row-expired { background-color: rgba(255, 42, 42, 0.1) !important; border-left: 3px solid var(--accent-red); }
         .row-expiring { background-color: rgba(255, 184, 0, 0.08) !important; border-left: 3px solid var(--accent-gold); }
+        
+        /* HIGHLIGHT FOR NEWLY ADDED ROWS */
+        .row-new { background-color: rgba(0, 255, 102, 0.1) !important; border-left: 3px solid var(--accent-green) !important; }
 
         .tag-location { background-color: rgba(0, 240, 255, 0.1); color: var(--accent-cyan); padding: 4px 8px; border-radius: 2px; font-family: var(--font-header); font-weight: 700; font-size: 11px; border: 1px solid rgba(0, 240, 255, 0.3); }
         .tag-qty { font-weight: bold; color: var(--accent-gold); font-size: 14px; }
@@ -634,6 +637,9 @@
 </div>
 
 <script>
+    // --- GLOBAL VARIABLE FOR TRACKING NEWLY ADDED ITEMS ---
+    let newlyAddedIds = [];
+
     // --- BOOT UP SEQUENCE & NAVIGATION ---
     function runBootSequence() {
         const lines = [
@@ -692,11 +698,10 @@
     // --- CENTERED NOTIFICATION SYSTEM ---
     let notifTimeout;
 
-    function triggerCenterNotif(type, dataKeyword = "") {
+    function triggerCenterNotif(type, count = 0, detail = "") {
         const container = document.getElementById('centerNotifContainer');
         const box = document.getElementById('centerNotifBox');
         
-        // Reset any existing timeouts if triggered rapidly
         clearTimeout(notifTimeout);
         container.style.display = 'flex';
         
@@ -704,7 +709,7 @@
         box.innerHTML = `
             <div class="spinner"></div>
             <h2 style="color: var(--accent-cyan);">LOADING DATA...</h2>
-            <p>SCANNING SYSTEM FOR UPDATES</p>
+            <p>INTEGRATING NEW ASSETS</p>
         `;
         box.style.borderColor = "var(--accent-cyan)";
         box.style.boxShadow = "0 0 40px rgba(0, 240, 255, 0.2)";
@@ -713,16 +718,17 @@
         setTimeout(() => {
             if(type === 'success') {
                 box.innerHTML = `
-                    <h2 style="color: var(--accent-green);"><span style="margin-right:10px;">✓</span> NEW PENDING DETECTED</h2>
-                    <p>SYSTEM HAS REGISTERED NEW ASSET DATA.</p>
-                    <button class="btn btn-add" style="margin-top:10px; width:100%;" onclick="handleNotifClick('${dataKeyword}')">CLICK TO VIEW DATA</button>
+                    <h2 style="color: var(--accent-green);"><span style="margin-right:10px;">✓</span> PENDING LOGGED</h2>
+                    <p style="color: var(--accent-green); font-weight: bold; margin-bottom: 5px;">${count} RECORD(S) ADDED:</p>
+                    <p style="font-size: 14px; margin-top: 0; color: var(--text-bright);">${detail}</p>
+                    <button class="btn btn-add" style="margin-top:10px; width:100%;" onclick="showNewEntries()">VIEW NEW DATA IN LEDGER</button>
                 `;
                 box.style.borderColor = "var(--accent-green)";
                 box.style.boxShadow = "0 0 40px rgba(0, 255, 102, 0.2)";
             } else if(type === 'empty') {
                 box.innerHTML = `
-                    <h2 style="color: var(--text-muted);"><span style="margin-right:10px;">ℹ</span> NO NEW PENDING AS OF TODAY</h2>
-                    <p>NO NEW DATA WAS ADDED TO THE SYSTEM.</p>
+                    <h2 style="color: var(--text-muted);"><span style="margin-right:10px;">ℹ</span> NO NEW PENDING</h2>
+                    <p>NO DATA WAS ADDED TO THE SYSTEM.</p>
                     <button class="btn btn-clear" style="margin-top:10px; width:100%;" onclick="closeCenterNotif()">DISMISS</button>
                 `;
                 box.style.borderColor = "var(--border-bright)";
@@ -742,21 +748,30 @@
         clearTimeout(notifTimeout);
     }
 
-    function handleNotifClick(keyword) {
+    function showNewEntries() {
         closeCenterNotif();
-        if (keyword === 'BATCH_IMPORT') {
-            // For Excel import, just show full ledger cleared of search
-            goToView('ledger');
-            document.getElementById('searchInput').value = '';
-            filterLedger();
-            // Scroll gracefully
-            document.getElementById('ledgerSection').scrollIntoView({ behavior: 'smooth' });
-        } else {
-            // For single entry, jump and search specifically for that entry
-            jumpToLedger(keyword);
-        }
-    }
+        goToView('ledger');
+        
+        // Setup the search bar to visually indicate it is in a filtered state
+        const searchInput = document.getElementById('searchInput');
+        searchInput.value = '';
+        searchInput.placeholder = "> SHOWING RECENTLY ADDED ONLY. (TYPE TO SEARCH ALL...)";
 
+        // Filter the table directly by ID to show ONLY newly added records
+        const rows = document.querySelector("#dataTable tbody").getElementsByTagName("tr");
+        for (let i = 0; i < rows.length; i++) {
+            if (rows[i].cells.length === 1) continue; // Skip empty row text
+            const rowId = rows[i].getAttribute('data-id');
+            if (newlyAddedIds.includes(rowId)) {
+                rows[i].style.display = ""; // Show
+            } else {
+                rows[i].style.display = "none"; // Hide others
+            }
+        }
+
+        // Scroll gracefully to the ledger section
+        document.getElementById('ledgerSection').scrollIntoView({ behavior: 'smooth' });
+    }
 
     // --- HUB & VIEW MANAGEMENT ---
     function showHub() {
@@ -920,7 +935,10 @@
 
     // --- ADVANCED SEARCH / FILTER BARS ---
     function filterLedger() {
-        const filter = document.getElementById("searchInput").value.toUpperCase();
+        const searchInput = document.getElementById("searchInput");
+        searchInput.placeholder = "> SCAN LEDGER: ENTER PATIENT, ASSET, OR ZONE..."; // Reset placeholder on type
+        const filter = searchInput.value.toUpperCase();
+        
         const rows = document.querySelector("#dataTable tbody").getElementsByTagName("tr");
         for (let i = 0; i < rows.length; i++) {
             if (rows[i].cells.length === 1) continue; 
@@ -1009,6 +1027,12 @@
             }
             
             if(rowClass) tr.className = rowClass;
+            
+            // Add custom data attribute and highlight class for new items
+            tr.setAttribute('data-id', rec.id);
+            if(newlyAddedIds.includes(rec.id)) {
+                tr.classList.add("row-new");
+            }
 
             tr.innerHTML = `
                 <td><span class="tag-location">${rec.location}</span></td>
@@ -1198,8 +1222,12 @@
             }
         }
 
+        const newId = Date.now().toString();
+        // Reset and track the newly added ID
+        newlyAddedIds = [newId];
+
         const newRecord = {
-            id: Date.now().toString(),
+            id: newId,
             patientName, glDate, glExpiry, government, location, processedBy, medicine, quantity, uom, remarks
         };
 
@@ -1207,7 +1235,7 @@
         saveData();
 
         // Trigger Tactical Center Notification (Success)
-        triggerCenterNotif('success', patientName);
+        triggerCenterNotif('success', 1, `${patientName} - ${medicine}`);
 
         document.getElementById('patientName').value = '';
         document.getElementById('medicine').value = '';
@@ -1289,6 +1317,9 @@
             let importedCount = 0;
             let duplicateSkippedCount = 0;
 
+            // Reset newly added ids for the batch import
+            newlyAddedIds = [];
+
             jsonData.forEach(row => {
                 const cleanRow = {};
                 for (let key in row) cleanRow[key.trim().toUpperCase()] = row[key];
@@ -1328,7 +1359,6 @@
                 const parsedExpDate = parseExcelDate(dateExp);
                 
                 if (checkDuplicate(pName, parsedGLDate, gov, loc, med)) {
-                    // Only ask if duplicate found inside Excel batch import
                     const proceed = confirm(`⚠️ EXCEL BATCH IMPORT: DUPLICATE DETECTED!\n\nNasa system na ang record na ito:\n- PATIENT: ${pName}\n- DATE: ${parsedGLDate}\n- GOV: ${gov}\n- MEDICINE: ${med}\n\nGusto mo bang I-SAVE pa rin ito mula sa Excel?\n(Click OK to Add anyway, Cancel to Skip)`);
                     if (!proceed) {
                         duplicateSkippedCount++;
@@ -1342,8 +1372,11 @@
                 let uomOpt = JSON.parse(localStorage.getItem('uomList'));
                 if(!uomOpt.includes(finalUom.toUpperCase())) { uomOpt.push(finalUom.toUpperCase()); localStorage.setItem('uomList', JSON.stringify(uomOpt)); }
 
+                const newId = Date.now().toString() + Math.random().toString();
+                newlyAddedIds.push(newId);
+
                 records.push({
-                    id: Date.now().toString() + Math.random().toString(),
+                    id: newId,
                     patientName: String(pName).trim().toUpperCase(),
                     glDate: parsedGLDate,
                     glExpiry: parsedExpDate,
@@ -1362,10 +1395,8 @@
                 saveData();
                 loadSelect('location', 'locList'); 
                 loadSelect('uom', 'uomList');
-                // Trigger success center notification for batch import
-                triggerCenterNotif('success', 'BATCH_IMPORT');
+                triggerCenterNotif('success', importedCount, 'EXCEL BATCH IMPORT');
             } else {
-                // If 0 imported (either failed or all skipped)
                 triggerCenterNotif('empty');
             }
             event.target.value = '';
