@@ -310,6 +310,72 @@
         .alert-tag { background: var(--accent-red); color: white; padding: 2px 5px; border-radius: 2px; font-size: 10px; font-weight: bold; }
         .warning-tag { background: var(--accent-gold); color: black; padding: 2px 5px; border-radius: 2px; font-size: 10px; font-weight: bold; }
 
+        /* TOAST NOTIFICATIONS */
+        .toast-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            pointer-events: none;
+        }
+
+        .toast {
+            background: var(--bg-panel);
+            border: 1px solid var(--accent-green);
+            border-left: 5px solid var(--accent-green);
+            color: var(--text-bright);
+            padding: 15px 20px;
+            border-radius: 4px;
+            font-family: var(--font-data);
+            font-size: 14px;
+            box-shadow: 0 0 20px rgba(0, 255, 102, 0.2);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            min-width: 300px;
+            pointer-events: auto;
+            animation: slideInRight 0.4s ease-out forwards;
+        }
+
+        .toast-content {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .toast-icon {
+            color: var(--accent-green);
+            font-size: 18px;
+            text-shadow: 0 0 10px var(--accent-green);
+        }
+
+        .toast-close {
+            background: transparent;
+            border: none;
+            color: var(--accent-green);
+            font-size: 24px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.3s;
+            padding: 0;
+            line-height: 1;
+            margin-left: 15px;
+        }
+
+        .toast-close:hover {
+            color: #fff;
+            text-shadow: 0 0 10px var(--accent-green);
+            transform: scale(1.1);
+        }
+
+        @keyframes slideInRight {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
         /* MOBILE RESPONSIVENESS */
         @media (max-width: 1024px) {
             .hud-container { grid-template-columns: 1fr; gap: 10px; }
@@ -324,6 +390,7 @@
             #bootScreen { font-size: 16px; padding: 20px; }
             .hub-header h1 { font-size: 32px; }
             .card-header { flex-direction: column; align-items: flex-start; gap: 10px; }
+            .toast { min-width: calc(100vw - 40px); } /* Full width minus margins on mobile */
         }
     </style>
 </head>
@@ -574,6 +641,9 @@
 
 </div>
 
+<!-- TOAST NOTIFICATION CONTAINER -->
+<div id="toastContainer" class="toast-container"></div>
+
 <script>
     // --- BOOT UP SEQUENCE & NAVIGATION ---
     function runBootSequence() {
@@ -628,6 +698,29 @@
             if(cursor.parentNode) cursor.parentNode.removeChild(cursor);
             if (callback) callback();
         }
+    }
+
+    // --- TOAST NOTIFICATION LOGIC ---
+    function showToast(message) {
+        const container = document.getElementById('toastContainer');
+        const toast = document.createElement('div');
+        toast.className = 'toast';
+        toast.innerHTML = `
+            <div class="toast-content">
+                <span class="toast-icon">✓</span>
+                <span class="toast-message">${message}</span>
+            </div>
+            <button class="toast-close" onclick="this.parentElement.remove()">&times;</button>
+        `;
+        container.appendChild(toast);
+
+        // Auto dismiss after 5 seconds
+        setTimeout(() => {
+            if(toast.parentElement) {
+                toast.style.animation = "slideInRight 0.4s ease-out reverse forwards";
+                setTimeout(() => toast.remove(), 400); // wait for reverse animation before removing
+            }
+        }, 5000);
     }
 
     // --- HUB & VIEW MANAGEMENT ---
@@ -1084,6 +1177,9 @@
 
         records.push(newRecord);
         saveData();
+
+        // Trigger Tactical Toast Notification
+        showToast(`ENCODED: ${quantity} ${uom} ng ${medicine} para kay ${patientName}.`);
 
         document.getElementById('patientName').value = '';
         document.getElementById('medicine').value = '';
