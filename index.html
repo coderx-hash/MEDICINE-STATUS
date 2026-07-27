@@ -310,71 +310,59 @@
         .alert-tag { background: var(--accent-red); color: white; padding: 2px 5px; border-radius: 2px; font-size: 10px; font-weight: bold; }
         .warning-tag { background: var(--accent-gold); color: black; padding: 2px 5px; border-radius: 2px; font-size: 10px; font-weight: bold; }
 
-        /* TOAST NOTIFICATIONS */
-        .toast-container {
+        /* CENTERED NOTIFICATION (NEW PENDING / LOADING) */
+        .center-notif-container {
             position: fixed;
-            bottom: 20px;
-            right: 20px;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(4px);
             z-index: 10000;
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-            pointer-events: none;
+            display: none;
+            justify-content: center;
+            align-items: center;
         }
-
-        .toast {
+        
+        .center-notif-box {
             background: var(--bg-panel);
-            border: 1px solid var(--accent-green);
-            border-left: 5px solid var(--accent-green);
-            color: var(--text-bright);
-            padding: 15px 20px;
+            border: 2px solid var(--accent-cyan);
+            padding: 40px 50px;
+            text-align: center;
+            box-shadow: 0 0 40px rgba(0, 240, 255, 0.2);
             border-radius: 4px;
+            font-family: var(--font-header);
+            color: var(--text-bright);
+            animation: popIn 0.3s ease-out forwards;
+            max-width: 90%;
+            width: 400px;
+        }
+
+        .center-notif-box h2 {
+            font-size: 32px;
+            justify-content: center;
+            margin-bottom: 10px;
+            letter-spacing: 2px;
+        }
+
+        .center-notif-box p {
             font-family: var(--font-data);
-            font-size: 14px;
-            box-shadow: 0 0 20px rgba(0, 255, 102, 0.2);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            min-width: 300px;
-            pointer-events: auto;
-            animation: slideInRight 0.4s ease-out forwards;
+            font-size: 16px;
+            margin-bottom: 25px;
+            color: var(--text-main);
         }
 
-        .toast-content {
-            display: flex;
-            align-items: center;
-            gap: 15px;
+        /* SPINNER ANIMATION */
+        .spinner {
+            border: 4px solid rgba(0, 240, 255, 0.1);
+            border-top: 4px solid var(--accent-cyan);
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px auto;
         }
 
-        .toast-icon {
-            color: var(--accent-green);
-            font-size: 18px;
-            text-shadow: 0 0 10px var(--accent-green);
-        }
-
-        .toast-close {
-            background: transparent;
-            border: none;
-            color: var(--accent-green);
-            font-size: 24px;
-            cursor: pointer;
-            font-weight: bold;
-            transition: 0.3s;
-            padding: 0;
-            line-height: 1;
-            margin-left: 15px;
-        }
-
-        .toast-close:hover {
-            color: #fff;
-            text-shadow: 0 0 10px var(--accent-green);
-            transform: scale(1.1);
-        }
-
-        @keyframes slideInRight {
-            from { transform: translateX(100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
-        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        @keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
         /* MOBILE RESPONSIVENESS */
         @media (max-width: 1024px) {
@@ -390,7 +378,6 @@
             #bootScreen { font-size: 16px; padding: 20px; }
             .hub-header h1 { font-size: 32px; }
             .card-header { flex-direction: column; align-items: flex-start; gap: 10px; }
-            .toast { min-width: calc(100vw - 40px); } /* Full width minus margins on mobile */
         }
     </style>
 </head>
@@ -602,7 +589,6 @@
     <!-- 3. Zone Summary -->
     <div class="card summary-card" id="zoneSummarySection">
         <div class="card-header"><h3>SUMMARY PER ZONE</h3></div>
-        <!-- NEW SEARCH BAR FOR ZONE SUMMARY -->
         <input type="text" id="searchZoneInput" class="search-bar" placeholder="> SCAN ZONE SUMMARY: ENTER ZONE OR ASSET..." onkeyup="filterZoneSummary()">
         <div class="table-responsive">
             <table class="summary-table" id="summaryTable">
@@ -622,7 +608,6 @@
     <!-- 4. Global Summary -->
     <div class="card global-summary-card" id="globalSummarySection">
         <div class="card-header"><h3>GLOBAL SUMMARY</h3></div>
-        <!-- NEW SEARCH BAR FOR GLOBAL SUMMARY -->
         <input type="text" id="searchGlobalInput" class="search-bar" placeholder="> SCAN GLOBAL SUMMARY: ENTER ASSET..." onkeyup="filterGlobalSummary()">
         <div class="table-responsive">
             <table class="summary-table" id="globalSummaryTable">
@@ -641,8 +626,12 @@
 
 </div>
 
-<!-- TOAST NOTIFICATION CONTAINER -->
-<div id="toastContainer" class="toast-container"></div>
+<!-- CENTERED NOTIFICATION OVERLAY -->
+<div id="centerNotifContainer" class="center-notif-container">
+    <div class="center-notif-box" id="centerNotifBox">
+        <!-- Content gets injected by JavaScript -->
+    </div>
+</div>
 
 <script>
     // --- BOOT UP SEQUENCE & NAVIGATION ---
@@ -700,28 +689,74 @@
         }
     }
 
-    // --- TOAST NOTIFICATION LOGIC ---
-    function showToast(message) {
-        const container = document.getElementById('toastContainer');
-        const toast = document.createElement('div');
-        toast.className = 'toast';
-        toast.innerHTML = `
-            <div class="toast-content">
-                <span class="toast-icon">✓</span>
-                <span class="toast-message">${message}</span>
-            </div>
-            <button class="toast-close" onclick="this.parentElement.remove()">&times;</button>
-        `;
-        container.appendChild(toast);
+    // --- CENTERED NOTIFICATION SYSTEM ---
+    let notifTimeout;
 
-        // Auto dismiss after 5 seconds
+    function triggerCenterNotif(type, dataKeyword = "") {
+        const container = document.getElementById('centerNotifContainer');
+        const box = document.getElementById('centerNotifBox');
+        
+        // Reset any existing timeouts if triggered rapidly
+        clearTimeout(notifTimeout);
+        container.style.display = 'flex';
+        
+        // 1. Initial Loading State
+        box.innerHTML = `
+            <div class="spinner"></div>
+            <h2 style="color: var(--accent-cyan);">LOADING DATA...</h2>
+            <p>SCANNING SYSTEM FOR UPDATES</p>
+        `;
+        box.style.borderColor = "var(--accent-cyan)";
+        box.style.boxShadow = "0 0 40px rgba(0, 240, 255, 0.2)";
+
+        // 2. Resolve State after 1.5 Seconds
         setTimeout(() => {
-            if(toast.parentElement) {
-                toast.style.animation = "slideInRight 0.4s ease-out reverse forwards";
-                setTimeout(() => toast.remove(), 400); // wait for reverse animation before removing
+            if(type === 'success') {
+                box.innerHTML = `
+                    <h2 style="color: var(--accent-green);"><span style="margin-right:10px;">✓</span> NEW PENDING DETECTED</h2>
+                    <p>SYSTEM HAS REGISTERED NEW ASSET DATA.</p>
+                    <button class="btn btn-add" style="margin-top:10px; width:100%;" onclick="handleNotifClick('${dataKeyword}')">CLICK TO VIEW DATA</button>
+                `;
+                box.style.borderColor = "var(--accent-green)";
+                box.style.boxShadow = "0 0 40px rgba(0, 255, 102, 0.2)";
+            } else if(type === 'empty') {
+                box.innerHTML = `
+                    <h2 style="color: var(--text-muted);"><span style="margin-right:10px;">ℹ</span> NO NEW PENDING AS OF TODAY</h2>
+                    <p>NO NEW DATA WAS ADDED TO THE SYSTEM.</p>
+                    <button class="btn btn-clear" style="margin-top:10px; width:100%;" onclick="closeCenterNotif()">DISMISS</button>
+                `;
+                box.style.borderColor = "var(--border-bright)";
+                box.style.boxShadow = "none";
             }
-        }, 5000);
+            
+            // 3. Auto Dismiss 5 seconds AFTER result is shown
+            notifTimeout = setTimeout(() => {
+                closeCenterNotif();
+            }, 5000);
+            
+        }, 1500); 
     }
+
+    function closeCenterNotif() {
+        document.getElementById('centerNotifContainer').style.display = 'none';
+        clearTimeout(notifTimeout);
+    }
+
+    function handleNotifClick(keyword) {
+        closeCenterNotif();
+        if (keyword === 'BATCH_IMPORT') {
+            // For Excel import, just show full ledger cleared of search
+            goToView('ledger');
+            document.getElementById('searchInput').value = '';
+            filterLedger();
+            // Scroll gracefully
+            document.getElementById('ledgerSection').scrollIntoView({ behavior: 'smooth' });
+        } else {
+            // For single entry, jump and search specifically for that entry
+            jumpToLedger(keyword);
+        }
+    }
+
 
     // --- HUB & VIEW MANAGEMENT ---
     function showHub() {
@@ -767,22 +802,15 @@
 
     // --- INTERACTIVE JUMP TO LEDGER ---
     function jumpToLedger(searchKeyword) {
-        // Close any active modals
         closeModal('alertModal');
         closeModal('pendingModal');
         closeModal('zonesModal');
 
-        // Insert keyword into ledger search bar
         const searchInput = document.getElementById('searchInput');
         searchInput.value = searchKeyword;
 
-        // Ensure we are viewing the ledger view
         goToView('ledger');
-
-        // Trigger filter
         filterLedger();
-
-        // Scroll gracefully to the ledger section
         document.getElementById('ledgerSection').scrollIntoView({ behavior: 'smooth' });
     }
 
@@ -1123,7 +1151,7 @@
                 const tr = document.createElement('tr');
                 tr.className = "clickable-row";
                 tr.title = "CLICK TO VIEW PATIENT DATA IN LEDGER";
-                tr.onclick = () => jumpToLedger(rec.patientName); // Jumps strictly to this specific patient's alert
+                tr.onclick = () => jumpToLedger(rec.patientName); 
 
                 let statHTML = diffDays < 0 ? `<span class="alert-tag">EXPIRED</span>` : `<span class="warning-tag">IN ${diffDays}D</span>`;
                 tr.innerHTML = `<td>${statHTML}</td><td>${rec.patientName}</td><td>${formatDateForDisplay(rec.glExpiry)}</td><td>${rec.medicine}</td><td>${rec.location}</td>`;
@@ -1178,8 +1206,8 @@
         records.push(newRecord);
         saveData();
 
-        // Trigger Tactical Toast Notification
-        showToast(`ENCODED: ${quantity} ${uom} ng ${medicine} para kay ${patientName}.`);
+        // Trigger Tactical Center Notification (Success)
+        triggerCenterNotif('success', patientName);
 
         document.getElementById('patientName').value = '';
         document.getElementById('medicine').value = '';
@@ -1300,6 +1328,7 @@
                 const parsedExpDate = parseExcelDate(dateExp);
                 
                 if (checkDuplicate(pName, parsedGLDate, gov, loc, med)) {
+                    // Only ask if duplicate found inside Excel batch import
                     const proceed = confirm(`⚠️ EXCEL BATCH IMPORT: DUPLICATE DETECTED!\n\nNasa system na ang record na ito:\n- PATIENT: ${pName}\n- DATE: ${parsedGLDate}\n- GOV: ${gov}\n- MEDICINE: ${med}\n\nGusto mo bang I-SAVE pa rin ito mula sa Excel?\n(Click OK to Add anyway, Cancel to Skip)`);
                     if (!proceed) {
                         duplicateSkippedCount++;
@@ -1329,13 +1358,15 @@
                 importedCount++;
             });
 
-            if (importedCount > 0 || duplicateSkippedCount > 0) {
+            if (importedCount > 0) {
                 saveData();
                 loadSelect('location', 'locList'); 
                 loadSelect('uom', 'uomList');
-                alert(`IMPORT SUMMARY:\n\n✅ ${importedCount} ASSETS INTEGRATED.\n❌ ${duplicateSkippedCount} DUPLICATES SKIPPED.`);
+                // Trigger success center notification for batch import
+                triggerCenterNotif('success', 'BATCH_IMPORT');
             } else {
-                alert("IMPORT FAILED OR ALL ITEMS SKIPPED.");
+                // If 0 imported (either failed or all skipped)
+                triggerCenterNotif('empty');
             }
             event.target.value = '';
         };
