@@ -295,6 +295,10 @@
         .delete-btn { background-color: transparent; color: var(--accent-red); border: 1px solid var(--accent-red); padding: 4px 8px; border-radius: 2px; cursor: pointer; font-size: 11px; font-weight: bold; transition:0.2s;}
         .delete-btn:hover { background-color: var(--accent-red); color: white; box-shadow: 0 0 10px var(--accent-red); }
 
+        /* CLICKABLE ROWS FOR SUMMARIES AND MODALS */
+        .clickable-row { cursor: pointer; transition: background 0.2s, outline 0.2s; }
+        .clickable-row:hover { background-color: rgba(0, 240, 255, 0.15) !important; outline: 1px solid var(--accent-cyan); }
+
         .summary-card { border-top: 3px solid var(--accent-cyan); }
         .global-summary-card { border-top: 3px solid var(--accent-gold); }
 
@@ -531,6 +535,8 @@
     <!-- 3. Zone Summary -->
     <div class="card summary-card" id="zoneSummarySection">
         <div class="card-header"><h3>SUMMARY PER ZONE</h3></div>
+        <!-- NEW SEARCH BAR FOR ZONE SUMMARY -->
+        <input type="text" id="searchZoneInput" class="search-bar" placeholder="> SCAN ZONE SUMMARY: ENTER ZONE OR ASSET..." onkeyup="filterZoneSummary()">
         <div class="table-responsive">
             <table class="summary-table" id="summaryTable">
                 <thead>
@@ -549,6 +555,8 @@
     <!-- 4. Global Summary -->
     <div class="card global-summary-card" id="globalSummarySection">
         <div class="card-header"><h3>GLOBAL SUMMARY</h3></div>
+        <!-- NEW SEARCH BAR FOR GLOBAL SUMMARY -->
+        <input type="text" id="searchGlobalInput" class="search-bar" placeholder="> SCAN GLOBAL SUMMARY: ENTER ASSET..." onkeyup="filterGlobalSummary()">
         <div class="table-responsive">
             <table class="summary-table" id="globalSummaryTable">
                 <thead>
@@ -664,6 +672,27 @@
         }
     }
 
+    // --- INTERACTIVE JUMP TO LEDGER ---
+    function jumpToLedger(searchKeyword) {
+        // Close any active modals
+        closeModal('alertModal');
+        closeModal('pendingModal');
+        closeModal('zonesModal');
+
+        // Insert keyword into ledger search bar
+        const searchInput = document.getElementById('searchInput');
+        searchInput.value = searchKeyword;
+
+        // Ensure we are viewing the ledger view
+        goToView('ledger');
+
+        // Trigger filter
+        filterLedger();
+
+        // Scroll gracefully to the ledger section
+        document.getElementById('ledgerSection').scrollIntoView({ behavior: 'smooth' });
+    }
+
     // --- LIVE CLOCK ---
     function updateClock() {
         const now = new Date();
@@ -768,7 +797,7 @@
         );
     }
 
-    // --- ADVANCED SEARCH / FILTER BAR ---
+    // --- ADVANCED SEARCH / FILTER BARS ---
     function filterLedger() {
         const filter = document.getElementById("searchInput").value.toUpperCase();
         const rows = document.querySelector("#dataTable tbody").getElementsByTagName("tr");
@@ -780,6 +809,26 @@
             } else {
                 rows[i].style.display = "none";
             }
+        }
+    }
+
+    function filterZoneSummary() {
+        const filter = document.getElementById("searchZoneInput").value.toUpperCase();
+        const rows = document.querySelector("#summaryTable tbody").getElementsByTagName("tr");
+        for (let i = 0; i < rows.length; i++) {
+            if (rows[i].cells.length === 1) continue;
+            const text = rows[i].innerText.toUpperCase();
+            rows[i].style.display = text.includes(filter) ? "" : "none";
+        }
+    }
+
+    function filterGlobalSummary() {
+        const filter = document.getElementById("searchGlobalInput").value.toUpperCase();
+        const rows = document.querySelector("#globalSummaryTable tbody").getElementsByTagName("tr");
+        for (let i = 0; i < rows.length; i++) {
+            if (rows[i].cells.length === 1) continue;
+            const text = rows[i].innerText.toUpperCase();
+            rows[i].style.display = text.includes(filter) ? "" : "none";
         }
     }
 
@@ -916,11 +965,19 @@
                 const data = summaryMap[loc][med];
                 const locCell = index === 0 ? `<span class="tag-location">${loc}</span>` : `<span style="opacity: 0.1;">"</span>`;
                 
+                // Dash Zone Table Row (Clickable)
                 const trDash = document.createElement('tr');
+                trDash.className = "clickable-row";
+                trDash.title = "CLICK TO VIEW PATIENT DATA IN LEDGER";
+                trDash.onclick = () => jumpToLedger(med);
                 trDash.innerHTML = `<td>${locCell}</td><td><strong>${med}</strong></td><td><span class="tag-qty">${data.totalQty}</span></td><td>${data.uom}</td>`;
                 locTbody.appendChild(trDash);
 
+                // Modal Zone Table Row (Clickable)
                 const trMod = document.createElement('tr');
+                trMod.className = "clickable-row";
+                trMod.title = "CLICK TO VIEW PATIENT DATA IN LEDGER";
+                trMod.onclick = () => jumpToLedger(med);
                 trMod.innerHTML = `<td>${locCell}</td><td><strong style="color:var(--accent-cyan);">${med}</strong></td><td><span class="tag-qty" style="font-size:18px;">${data.totalQty}</span></td><td>${data.uom}</td>`;
                 zonesModalTbody.appendChild(trMod);
             });
@@ -933,14 +990,26 @@
             const locsArr = Array.from(data.locations).sort();
             const locsStr = locsArr.map(l => `<span class="tag-location" style="font-size:9px; padding:2px 4px;">${l}</span>`).join(" ");
             
+            // Global Dash Table Row (Clickable)
             const trGlobal = document.createElement('tr');
+            trGlobal.className = "clickable-row";
+            trGlobal.title = "CLICK TO VIEW PATIENT DATA IN LEDGER";
+            trGlobal.onclick = () => jumpToLedger(med);
             trGlobal.innerHTML = `<td><strong>${med}</strong></td><td><span class="tag-qty">${data.totalQty}</span></td><td>${data.uom}</td>`;
             globalTbody.appendChild(trGlobal);
 
+            // Global Modal Table Row (Clickable)
             const trModal = document.createElement('tr');
+            trModal.className = "clickable-row";
+            trModal.title = "CLICK TO VIEW PATIENT DATA IN LEDGER";
+            trModal.onclick = () => jumpToLedger(med);
             trModal.innerHTML = `<td><strong style="color:var(--accent-cyan);">${med}</strong></td><td><span class="tag-qty" style="font-size:18px;">${data.totalQty}</span></td><td>${data.uom}</td><td style="white-space:normal; min-width:150px;">${locsStr}</td>`;
             modalTbody.appendChild(trModal);
         });
+        
+        // Ensure filters run properly if search input is retained during refresh
+        filterZoneSummary();
+        filterGlobalSummary();
     }
 
     function checkAlertsAndUpdateHUD() {
@@ -959,6 +1028,10 @@
             if (diffDays !== Infinity && diffDays <= 15) {
                 alertCount++;
                 const tr = document.createElement('tr');
+                tr.className = "clickable-row";
+                tr.title = "CLICK TO VIEW PATIENT DATA IN LEDGER";
+                tr.onclick = () => jumpToLedger(rec.patientName); // Jumps strictly to this specific patient's alert
+
                 let statHTML = diffDays < 0 ? `<span class="alert-tag">EXPIRED</span>` : `<span class="warning-tag">IN ${diffDays}D</span>`;
                 tr.innerHTML = `<td>${statHTML}</td><td>${rec.patientName}</td><td>${formatDateForDisplay(rec.glExpiry)}</td><td>${rec.medicine}</td><td>${rec.location}</td>`;
                 tbody.appendChild(tr);
