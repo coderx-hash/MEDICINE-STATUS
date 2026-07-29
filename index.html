@@ -554,8 +554,6 @@
                     <input type="text" id="processedBy" placeholder="Nag process" oninput="this.value = this.value.toUpperCase()" required>
                 </div>
 
-                <!-- TINANGGAL NA ANG REF / D.O. INPUT DITO -->
-                
                 <div>
                     <label>ASSET (MEDICINE w/ DOSAGE)</label>
                     <input type="text" id="medicine" placeholder="e.g. PARACETAMOL 500MG" oninput="this.value = this.value.toUpperCase()" required>
@@ -668,7 +666,7 @@
 
 <script>
     let newlyAddedIds = [];
-    let currentActionId = null; // Used for Receive modal target
+    let currentActionId = null; 
 
     // --- BOOT UP SEQUENCE & NAVIGATION ---
     function runBootSequence() {
@@ -843,7 +841,7 @@
         closeModal('zonesModal');
 
         const searchInput = document.getElementById('searchInput');
-        searchInput.value = searchKeyword;
+        searchInput.value = searchKeyword; 
 
         goToView('ledger');
         filterLedger();
@@ -948,7 +946,7 @@
             nDate(rec.glDate) === nDate(gDate) &&
             (rec.government || "").trim().toUpperCase() === (gov || "").trim().toUpperCase() &&
             (rec.location || "").trim().toUpperCase() === (loc || "").trim().toUpperCase() &&
-            (rec.medicine || "").trim().toUpperCase() === (med || "").trim().toUpperCase()
+            (rec.medicine || "").trim().toUpperCase().replace(/\s+/g, '') === (med || "").trim().toUpperCase().replace(/\s+/g, '')
         );
     }
 
@@ -956,12 +954,14 @@
     function filterLedger() {
         const searchInput = document.getElementById("searchInput");
         searchInput.placeholder = "> SCAN LEDGER: ENTER PATIENT, ASSET, REF/DO OR ZONE..."; 
-        const filter = searchInput.value.toUpperCase();
+        // TINANGGAL ANG SPACE SA SEARCH INPUT PARA MAG MATCH KAHIT IBA ANG SPACING
+        const filter = searchInput.value.toUpperCase().replace(/\s+/g, ''); 
         
         const rows = document.querySelector("#dataTable tbody").getElementsByTagName("tr");
         for (let i = 0; i < rows.length; i++) {
             if (rows[i].cells.length === 1) continue; 
-            const text = rows[i].innerText.toUpperCase();
+            // TINANGGAL DIN ANG SPACE SA TEXT NG TABLE PARA MA-COMPARE NG MAAYOS
+            const text = rows[i].innerText.toUpperCase().replace(/\s+/g, '');
             if (text.includes(filter)) {
                 rows[i].style.display = "";
             } else {
@@ -971,21 +971,21 @@
     }
 
     function filterZoneSummary() {
-        const filter = document.getElementById("searchZoneInput").value.toUpperCase();
+        const filter = document.getElementById("searchZoneInput").value.toUpperCase().replace(/\s+/g, '');
         const rows = document.querySelector("#summaryTable tbody").getElementsByTagName("tr");
         for (let i = 0; i < rows.length; i++) {
             if (rows[i].cells.length === 1) continue;
-            const text = rows[i].innerText.toUpperCase();
+            const text = rows[i].innerText.toUpperCase().replace(/\s+/g, '');
             rows[i].style.display = text.includes(filter) ? "" : "none";
         }
     }
 
     function filterGlobalSummary() {
-        const filter = document.getElementById("searchGlobalInput").value.toUpperCase();
+        const filter = document.getElementById("searchGlobalInput").value.toUpperCase().replace(/\s+/g, '');
         const rows = document.querySelector("#globalSummaryTable tbody").getElementsByTagName("tr");
         for (let i = 0; i < rows.length; i++) {
             if (rows[i].cells.length === 1) continue;
-            const text = rows[i].innerText.toUpperCase();
+            const text = rows[i].innerText.toUpperCase().replace(/\s+/g, '');
             rows[i].style.display = text.includes(filter) ? "" : "none";
         }
     }
@@ -1011,18 +1011,15 @@
             return;
         }
 
-        // --- BINAGO: SORT BY DATE (Oldest to Newest) ---
         let sortedRecords = [...records].sort((a, b) => {
             let dateA = new Date(a.glDate).getTime();
             let dateB = new Date(b.glDate).getTime();
             
-            // Kapag walang glDate or pareho, mag base nalang sa expiry date
             if (dateA === dateB || isNaN(dateA) || isNaN(dateB)) {
                 let expA = new Date(a.glExpiry).getTime();
                 let expB = new Date(b.glExpiry).getTime();
                 return expA - expB;
             }
-            
             return dateA - dateB;
         });
 
@@ -1036,7 +1033,6 @@
             const rcv = parseFloat(rec.receivedQty) || 0;
             const bal = req - rcv;
             
-            // Highlight Logics
             if (diffDays !== Infinity) {
                 if (diffDays < 0 && bal > 0) {
                     expiryStatusHTML = `<br><span class="alert-tag">EXPIRED</span>`;
@@ -1048,7 +1044,7 @@
             }
             
             if (bal <= 0) {
-                rowClass = "row-cleared"; // Greyed out if balance is 0 or less
+                rowClass = "row-cleared"; 
                 expiryStatusHTML += ` <span class="alert-tag" style="background:var(--accent-green); color:#000;">CLEARED</span>`;
             }
             
@@ -1118,33 +1114,35 @@
             if (bal <= 0) return; // ONLY COUNT PENDING BALANCES
 
             const loc = (rec.location || "").trim().toUpperCase();
-            const medName = (rec.medicine || "").trim().toUpperCase();
+            const rawMedName = (rec.medicine || "").trim().toUpperCase();
+            
+            // KEY FIX: TINATANGGAL LAHAT NG SPACES PARA MAG-MERGE (E.G. "150 MG" AT "150MG")
+            const medKey = rawMedName.replace(/\s+/g, ''); 
             const currentUom = (rec.uom || "").trim().toUpperCase();
             
             if (!summaryMap[loc]) summaryMap[loc] = {};
-            if (!summaryMap[loc][medName]) {
-                summaryMap[loc][medName] = { uom: currentUom, totalQty: 0 };
+            if (!summaryMap[loc][medKey]) {
+                summaryMap[loc][medKey] = { displayName: rawMedName, uom: currentUom, totalQty: 0 };
             } else {
-                let existingUomArray = summaryMap[loc][medName].uom.split(" / ");
+                let existingUomArray = summaryMap[loc][medKey].uom.split(" / ");
                 if (currentUom !== "" && !existingUomArray.includes(currentUom)) {
-                    summaryMap[loc][medName].uom += " / " + currentUom;
+                    summaryMap[loc][medKey].uom += " / " + currentUom;
                 }
             }
-            summaryMap[loc][medName].totalQty += bal;
+            summaryMap[loc][medKey].totalQty += bal;
 
-            if(!globalMedMap[medName]) {
-                globalMedMap[medName] = { totalQty: 0, uom: currentUom, locations: new Set() };
+            if(!globalMedMap[medKey]) {
+                globalMedMap[medKey] = { displayName: rawMedName, totalQty: 0, uom: currentUom, locations: new Set() };
             } else {
-                let gUomArr = globalMedMap[medName].uom.split(" / ");
+                let gUomArr = globalMedMap[medKey].uom.split(" / ");
                 if(currentUom !== "" && !gUomArr.includes(currentUom)) {
-                    globalMedMap[medName].uom += " / " + currentUom;
+                    globalMedMap[medKey].uom += " / " + currentUom;
                 }
             }
-            globalMedMap[medName].totalQty += bal;
-            globalMedMap[medName].locations.add(loc);
+            globalMedMap[medKey].totalQty += bal;
+            globalMedMap[medKey].locations.add(loc);
         });
 
-        // If no pending balances exist
         if(Object.keys(summaryMap).length === 0) {
             locTbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:var(--accent-green);">ALL REQUESTS FULFILLED</td></tr>';
             globalTbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:var(--accent-green);">ALL REQUESTS FULFILLED</td></tr>';
@@ -1155,45 +1153,45 @@
         // Render Zones Summary (Dashboard & Modal)
         Object.keys(summaryMap).sort().forEach(loc => {
             const medsList = Object.keys(summaryMap[loc]).sort();
-            medsList.forEach((med, index) => {
-                const data = summaryMap[loc][med];
+            medsList.forEach((key, index) => {
+                const data = summaryMap[loc][key];
                 const locCell = index === 0 ? `<span class="tag-location">${loc}</span>` : `<span style="opacity: 0.1;">"</span>`;
                 
                 const trDash = document.createElement('tr');
                 trDash.className = "clickable-row";
                 trDash.title = "CLICK TO VIEW PATIENT DATA IN LEDGER";
-                trDash.onclick = () => jumpToLedger(med);
-                trDash.innerHTML = `<td>${locCell}</td><td><strong>${med}</strong></td><td><span class="tag-qty" style="color:var(--accent-red);">${data.totalQty}</span></td><td>${data.uom}</td>`;
+                trDash.onclick = () => jumpToLedger(data.displayName);
+                trDash.innerHTML = `<td>${locCell}</td><td><strong>${data.displayName}</strong></td><td><span class="tag-qty" style="color:var(--accent-red);">${data.totalQty}</span></td><td>${data.uom}</td>`;
                 locTbody.appendChild(trDash);
 
                 const trMod = document.createElement('tr');
                 trMod.className = "clickable-row";
                 trMod.title = "CLICK TO VIEW PATIENT DATA IN LEDGER";
-                trMod.onclick = () => jumpToLedger(med);
-                trMod.innerHTML = `<td>${locCell}</td><td><strong style="color:var(--accent-cyan);">${med}</strong></td><td><span class="tag-qty" style="font-size:18px; color:var(--accent-red);">${data.totalQty}</span></td><td>${data.uom}</td>`;
+                trMod.onclick = () => jumpToLedger(data.displayName);
+                trMod.innerHTML = `<td>${locCell}</td><td><strong style="color:var(--accent-cyan);">${data.displayName}</strong></td><td><span class="tag-qty" style="font-size:18px; color:var(--accent-red);">${data.totalQty}</span></td><td>${data.uom}</td>`;
                 zonesModalTbody.appendChild(trMod);
             });
         });
 
         const allMeds = Object.keys(globalMedMap).sort();
         
-        allMeds.forEach(med => {
-            const data = globalMedMap[med];
+        allMeds.forEach(key => {
+            const data = globalMedMap[key];
             const locsArr = Array.from(data.locations).sort();
             const locsStr = locsArr.map(l => `<span class="tag-location" style="font-size:9px; padding:2px 4px;">${l}</span>`).join(" ");
             
             const trGlobal = document.createElement('tr');
             trGlobal.className = "clickable-row";
             trGlobal.title = "CLICK TO VIEW PATIENT DATA IN LEDGER";
-            trGlobal.onclick = () => jumpToLedger(med);
-            trGlobal.innerHTML = `<td><strong>${med}</strong></td><td><span class="tag-qty" style="color:var(--accent-red);">${data.totalQty}</span></td><td>${data.uom}</td>`;
+            trGlobal.onclick = () => jumpToLedger(data.displayName);
+            trGlobal.innerHTML = `<td><strong>${data.displayName}</strong></td><td><span class="tag-qty" style="color:var(--accent-red);">${data.totalQty}</span></td><td>${data.uom}</td>`;
             globalTbody.appendChild(trGlobal);
 
             const trModal = document.createElement('tr');
             trModal.className = "clickable-row";
             trModal.title = "CLICK TO VIEW PATIENT DATA IN LEDGER";
-            trModal.onclick = () => jumpToLedger(med);
-            trModal.innerHTML = `<td><strong style="color:var(--accent-cyan);">${med}</strong></td><td><span class="tag-qty" style="font-size:18px; color:var(--accent-red);">${data.totalQty}</span></td><td>${data.uom}</td><td style="white-space:normal; min-width:150px;">${locsStr}</td>`;
+            trModal.onclick = () => jumpToLedger(data.displayName);
+            trModal.innerHTML = `<td><strong style="color:var(--accent-cyan);">${data.displayName}</strong></td><td><span class="tag-qty" style="font-size:18px; color:var(--accent-red);">${data.totalQty}</span></td><td>${data.uom}</td><td style="white-space:normal; min-width:150px;">${locsStr}</td>`;
             modalTbody.appendChild(trModal);
         });
         
@@ -1278,9 +1276,9 @@
         
         // Update values
         records[recIndex].receivedQty = (parseFloat(records[recIndex].receivedQty) || 0) + inputQty;
-        records[recIndex].refNo = inputRef; // Update to the new OR/DO 
+        records[recIndex].refNo = inputRef; 
         
-        newlyAddedIds = [records[recIndex].id]; // To highlight row
+        newlyAddedIds = [records[recIndex].id]; 
         
         saveData();
         closeModal('receiveModal');
@@ -1354,7 +1352,6 @@
             const rcv = parseFloat(rec.receivedQty) || 0;
             const bal = req - rcv;
 
-            // Only purge expired if balance is still > 0 (Meaning pending and expired)
             if (diffDays < 0 && bal > 0) {
                 expiredCount++;
                 return false; 
@@ -1506,7 +1503,6 @@
     function exportToExcel() {
         if (records.length === 0) { alert("NO DATA FOR EXPORT."); return; }
 
-        // --- BINAGO: SORT BY DATE (Oldest to Newest) PARA SA EXCEL ---
         let sortedRecords = [...records].sort((a, b) => {
             let dateA = new Date(a.glDate).getTime();
             let dateB = new Date(b.glDate).getTime();
@@ -1549,26 +1545,27 @@
             const rcv = parseFloat(rec.receivedQty) || 0;
             const bal = req - rcv;
             
-            if (bal <= 0) return; // Only export pending balances to summary
+            if (bal <= 0) return; 
 
             const loc = rec.location.trim().toUpperCase();
-            const medName = rec.medicine.trim().toUpperCase();
+            const rawMedName = rec.medicine.trim().toUpperCase();
+            const medKey = rawMedName.replace(/\s+/g, ''); 
             const currentUom = rec.uom.trim().toUpperCase();
             
             if (!summaryMap[loc]) summaryMap[loc] = {};
-            if (!summaryMap[loc][medName]) summaryMap[loc][medName] = { "MEDICINE": medName, "UOM": currentUom, "PENDING BAL": 0 };
+            if (!summaryMap[loc][medKey]) summaryMap[loc][medKey] = { "MEDICINE": rawMedName, "UOM": currentUom, "PENDING BAL": 0 };
             else {
-                let existingUomArray = summaryMap[loc][medName]["UOM"].split(" / ");
-                if (currentUom !== "" && !existingUomArray.includes(currentUom)) summaryMap[loc][medName]["UOM"] += " / " + currentUom;
+                let existingUomArray = summaryMap[loc][medKey]["UOM"].split(" / ");
+                if (currentUom !== "" && !existingUomArray.includes(currentUom)) summaryMap[loc][medKey]["UOM"] += " / " + currentUom;
             }
-            summaryMap[loc][medName]["PENDING BAL"] += bal;
+            summaryMap[loc][medKey]["PENDING BAL"] += bal;
 
-            if (!globalMap[medName]) globalMap[medName] = { "MEDICINE": medName, "UOM": currentUom, "PENDING BAL": 0 };
+            if (!globalMap[medKey]) globalMap[medKey] = { "MEDICINE": rawMedName, "UOM": currentUom, "PENDING BAL": 0 };
             else {
-                let existingUomArrayG = globalMap[medName]["UOM"].split(" / ");
-                if (currentUom !== "" && !existingUomArrayG.includes(currentUom)) globalMap[medName]["UOM"] += " / " + currentUom;
+                let existingUomArrayG = globalMap[medKey]["UOM"].split(" / ");
+                if (currentUom !== "" && !existingUomArrayG.includes(currentUom)) globalMap[medKey]["UOM"] += " / " + currentUom;
             }
-            globalMap[medName]["PENDING BAL"] += bal;
+            globalMap[medKey]["PENDING BAL"] += bal;
         });
 
         Object.keys(summaryMap).sort().forEach(loc => {
