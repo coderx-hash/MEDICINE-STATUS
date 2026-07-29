@@ -1011,21 +1011,19 @@
             return;
         }
 
+        // --- BINAGO: SORT BY DATE (Oldest to Newest) ---
         let sortedRecords = [...records].sort((a, b) => {
-            let daysA = getDaysUntilExpiry(a.glExpiry);
-            let daysB = getDaysUntilExpiry(b.glExpiry);
-
-            const alertA = daysA <= 15;
-            const alertB = daysB <= 15;
-            if (alertA && !alertB) return -1;
-            if (!alertA && alertB) return 1;
-            if (alertA && alertB) { if (daysA !== daysB) return daysA - daysB; }
-
-            if (a.location === b.location) {
-                if (a.government === b.government) return a.patientName.localeCompare(b.patientName);
-                return a.government.localeCompare(b.government);
+            let dateA = new Date(a.glDate).getTime();
+            let dateB = new Date(b.glDate).getTime();
+            
+            // Kapag walang glDate or pareho, mag base nalang sa expiry date
+            if (dateA === dateB || isNaN(dateA) || isNaN(dateB)) {
+                let expA = new Date(a.glExpiry).getTime();
+                let expB = new Date(b.glExpiry).getTime();
+                return expA - expB;
             }
-            return a.location.localeCompare(b.location);
+            
+            return dateA - dateB;
         });
 
         sortedRecords.forEach((rec) => {
@@ -1508,9 +1506,17 @@
     function exportToExcel() {
         if (records.length === 0) { alert("NO DATA FOR EXPORT."); return; }
 
+        // --- BINAGO: SORT BY DATE (Oldest to Newest) PARA SA EXCEL ---
         let sortedRecords = [...records].sort((a, b) => {
-            if (a.location === b.location) return a.patientName.localeCompare(b.patientName);
-            return a.location.localeCompare(b.location);
+            let dateA = new Date(a.glDate).getTime();
+            let dateB = new Date(b.glDate).getTime();
+            
+            if (dateA === dateB || isNaN(dateA) || isNaN(dateB)) {
+                let expA = new Date(a.glExpiry).getTime();
+                let expB = new Date(b.glExpiry).getTime();
+                return expA - expB;
+            }
+            return dateA - dateB;
         });
 
         const masterData = sortedRecords.map(rec => {
