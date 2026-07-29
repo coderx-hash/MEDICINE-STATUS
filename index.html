@@ -9,7 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
     <style>
         :root {
-            /* TACTICAL DARK THEME */
+            /* TACTICAL DARK THEME (PANLALAKE/MAANGAS) */
             --bg-base: #05090c;
             --bg-panel: #0d141b;
             --bg-input: #121c26;
@@ -288,15 +288,18 @@
 
         .row-expired { background-color: rgba(255, 42, 42, 0.1) !important; border-left: 3px solid var(--accent-red); }
         .row-expiring { background-color: rgba(255, 184, 0, 0.08) !important; border-left: 3px solid var(--accent-gold); }
+        .row-cleared { opacity: 0.5; background-color: rgba(0, 255, 102, 0.05) !important; border-left: 3px solid var(--accent-green); }
         
         /* HIGHLIGHT FOR NEWLY ADDED ROWS */
         .row-new { background-color: rgba(0, 255, 102, 0.1) !important; border-left: 3px solid var(--accent-green) !important; }
 
         .tag-location { background-color: rgba(0, 240, 255, 0.1); color: var(--accent-cyan); padding: 4px 8px; border-radius: 2px; font-family: var(--font-header); font-weight: 700; font-size: 11px; border: 1px solid rgba(0, 240, 255, 0.3); }
-        .tag-qty { font-weight: bold; color: var(--accent-gold); font-size: 14px; }
-
+        
         .delete-btn { background-color: transparent; color: var(--accent-red); border: 1px solid var(--accent-red); padding: 4px 8px; border-radius: 2px; cursor: pointer; font-size: 11px; font-weight: bold; transition:0.2s;}
         .delete-btn:hover { background-color: var(--accent-red); color: white; box-shadow: 0 0 10px var(--accent-red); }
+
+        .rcv-btn { background-color: transparent; color: var(--accent-green); border: 1px solid var(--accent-green); padding: 4px 8px; border-radius: 2px; cursor: pointer; font-size: 11px; font-weight: bold; transition:0.2s; }
+        .rcv-btn:hover { background-color: var(--accent-green); color: black; box-shadow: 0 0 10px var(--accent-green); }
 
         /* CLICKABLE ROWS FOR SUMMARIES AND MODALS */
         .clickable-row { cursor: pointer; transition: background 0.2s, outline 0.2s; }
@@ -416,6 +419,27 @@
     </div>
 </div>
 
+<!-- RECEIVE / DEDUCT MODAL -->
+<div id="receiveModal" class="modal">
+    <div class="modal-content" style="max-width: 450px; border-color: var(--accent-green); box-shadow: 0 0 30px rgba(0,255,102,0.2);">
+        <span class="close-btn" onclick="closeModal('receiveModal')">&times;</span>
+        <div class="card-header"><h2 style="color: var(--accent-green);">📥 DEDUCT / RECEIVE STOCK</h2></div>
+        <div style="margin-bottom: 20px; padding: 15px; background: rgba(0,0,0,0.3); border: 1px dashed var(--border-bright);" id="receiveTargetText"></div>
+        
+        <div class="form-grid" style="grid-template-columns: 1fr;">
+            <div>
+                <label style="color: var(--accent-green);">INCOMING O.R. / D.O. NUMBER</label>
+                <input type="text" id="rcvRefInput" placeholder="e.g. DO-99812" oninput="this.value = this.value.toUpperCase()">
+            </div>
+            <div>
+                <label style="color: var(--accent-green);">QUANTITY ARRIVED (TO DEDUCT)</label>
+                <input type="number" id="rcvQtyInput" placeholder="Enter amount arrived..." min="1">
+            </div>
+        </div>
+        <button class="btn btn-add" style="width: 100%; margin-top: 15px;" onclick="processReceive()">CONFIRM STOCK ARRIVAL</button>
+    </div>
+</div>
+
 <!-- ALERT MODAL -->
 <div id="alertModal" class="modal">
     <div class="modal-content">
@@ -437,7 +461,7 @@
         <div class="card-header"><h2>📦 GRAND TOTAL PENDING (ALL ZONES)</h2></div>
         <div class="table-responsive">
             <table id="pendingTableModal">
-                <thead><tr><th>ASSET / MEDICINE</th><th>GRAND TOTAL</th><th>UNIT</th><th>LOCATION(S) ASSIGNED</th></tr></thead>
+                <thead><tr><th>ASSET / MEDICINE</th><th>PENDING BALANCE</th><th>UNIT</th><th>LOCATION(S) ASSIGNED</th></tr></thead>
                 <tbody></tbody>
             </table>
         </div>
@@ -451,7 +475,7 @@
         <div class="card-header"><h2>📍 ACTIVE ZONES SUMMARY</h2></div>
         <div class="table-responsive">
             <table id="zonesTableModal">
-                <thead><tr><th>ZONE</th><th>ASSET</th><th>TOTAL</th><th>UNIT</th></tr></thead>
+                <thead><tr><th>ZONE</th><th>ASSET</th><th>PENDING BAL</th><th>UNIT</th></tr></thead>
                 <tbody></tbody>
             </table>
         </div>
@@ -474,7 +498,7 @@
     <!-- HUD WIDGETS (CLICKABLE) -->
     <div class="hud-container" id="hudSection">
         <div class="hud-box" onclick="openModal('pendingModal')" title="Click to view all pending assets">
-            <div class="hud-title">TOTAL ASSET QUANTITY</div>
+            <div class="hud-title">TOTAL PENDING (BALANCE)</div>
             <div class="hud-value" id="hudTotalQty">0</div>
         </div>
         
@@ -491,7 +515,7 @@
 
     <!-- 1. DATA ENTRY FORM SECTION -->
     <div class="card" id="formSection">
-        <div class="card-header"><h3>DATA ENTRY FORM</h3></div>
+        <div class="card-header"><h3>DATA ENTRY FORM (NEW REQUEST)</h3></div>
         <form id="dataForm">
             <div class="form-grid">
                 <div>
@@ -529,6 +553,8 @@
                     <label>OPERATOR</label>
                     <input type="text" id="processedBy" placeholder="Nag process" oninput="this.value = this.value.toUpperCase()" required>
                 </div>
+
+                <!-- TINANGGAL NA ANG REF / D.O. INPUT DITO -->
                 
                 <div>
                     <label>ASSET (MEDICINE w/ DOSAGE)</label>
@@ -536,7 +562,7 @@
                 </div>
                 
                 <div>
-                    <label>QTY</label>
+                    <label>REQUESTED QTY</label>
                     <input type="number" id="quantity" placeholder="18" min="1" required>
                 </div>
                 <div>
@@ -569,7 +595,7 @@
         <div class="card-header">
             <h3>MASTER LEDGER</h3>
         </div>
-        <input type="text" id="searchInput" class="search-bar" placeholder="> SCAN LEDGER: ENTER PATIENT, ASSET, OR ZONE..." onkeyup="filterLedger()">
+        <input type="text" id="searchInput" class="search-bar" placeholder="> SCAN LEDGER: ENTER PATIENT, ASSET, REF/DO OR ZONE..." onkeyup="filterLedger()">
         <div class="table-responsive">
             <table id="dataTable">
                 <thead>
@@ -578,9 +604,13 @@
                         <th>PATIENT</th>
                         <th>LIFESPAN</th>
                         <th>GOV</th>
-                        <th>ASSET (QTY/UNIT)</th>
+                        <th>REF / D.O.</th>
+                        <th>ASSET</th>
+                        <th>REQ</th>
+                        <th>RCVD</th>
+                        <th>BAL</th>
+                        <th>UNIT</th>
                         <th>OPR</th>
-                        <th>REMARKS</th>
                         <th>CMD</th>
                     </tr>
                 </thead>
@@ -591,7 +621,7 @@
 
     <!-- 3. Zone Summary -->
     <div class="card summary-card" id="zoneSummarySection">
-        <div class="card-header"><h3>SUMMARY PER ZONE</h3></div>
+        <div class="card-header"><h3>PENDING SUMMARY PER ZONE</h3></div>
         <input type="text" id="searchZoneInput" class="search-bar" placeholder="> SCAN ZONE SUMMARY: ENTER ZONE OR ASSET..." onkeyup="filterZoneSummary()">
         <div class="table-responsive">
             <table class="summary-table" id="summaryTable">
@@ -599,7 +629,7 @@
                     <tr>
                         <th>ZONE</th>
                         <th>ASSET</th>
-                        <th>TOTAL</th>
+                        <th>PENDING BAL</th>
                         <th>UNIT</th>
                     </tr>
                 </thead>
@@ -610,14 +640,14 @@
 
     <!-- 4. Global Summary -->
     <div class="card global-summary-card" id="globalSummarySection">
-        <div class="card-header"><h3>GLOBAL SUMMARY</h3></div>
+        <div class="card-header"><h3>GLOBAL PENDING SUMMARY</h3></div>
         <input type="text" id="searchGlobalInput" class="search-bar" placeholder="> SCAN GLOBAL SUMMARY: ENTER ASSET..." onkeyup="filterGlobalSummary()">
         <div class="table-responsive">
             <table class="summary-table" id="globalSummaryTable">
                 <thead>
                     <tr>
                         <th>ASSET / MEDICINE</th>
-                        <th>GRAND TOTAL</th>
+                        <th>GRAND PENDING BAL</th>
                         <th>UNIT</th>
                     </tr>
                 </thead>
@@ -637,8 +667,8 @@
 </div>
 
 <script>
-    // --- GLOBAL VARIABLE FOR TRACKING NEWLY ADDED ITEMS ---
     let newlyAddedIds = [];
+    let currentActionId = null; // Used for Receive modal target
 
     // --- BOOT UP SEQUENCE & NAVIGATION ---
     function runBootSequence() {
@@ -697,7 +727,6 @@
 
     // --- CENTERED NOTIFICATION SYSTEM ---
     let notifTimeout;
-
     function triggerCenterNotif(type, count = 0, detail = "") {
         const container = document.getElementById('centerNotifContainer');
         const box = document.getElementById('centerNotifBox');
@@ -705,7 +734,6 @@
         clearTimeout(notifTimeout);
         container.style.display = 'flex';
         
-        // 1. Initial Loading State
         box.innerHTML = `
             <div class="spinner"></div>
             <h2 style="color: var(--accent-cyan);">LOADING DATA...</h2>
@@ -714,33 +742,31 @@
         box.style.borderColor = "var(--accent-cyan)";
         box.style.boxShadow = "0 0 40px rgba(0, 240, 255, 0.2)";
 
-        // 2. Resolve State after 1.5 Seconds
         setTimeout(() => {
             if(type === 'success') {
                 box.innerHTML = `
-                    <h2 style="color: var(--accent-green);"><span style="margin-right:10px;">✓</span> PENDING LOGGED</h2>
-                    <p style="color: var(--accent-green); font-weight: bold; margin-bottom: 5px;">${count} RECORD(S) ADDED:</p>
+                    <h2 style="color: var(--accent-green);"><span style="margin-right:10px;">✓</span> SUCCESS</h2>
+                    <p style="color: var(--accent-green); font-weight: bold; margin-bottom: 5px;">${count} RECORD(S) PROCESSED:</p>
                     <p style="font-size: 14px; margin-top: 0; color: var(--text-bright);">${detail}</p>
-                    <button class="btn btn-add" style="margin-top:10px; width:100%;" onclick="showNewEntries()">VIEW NEW DATA IN LEDGER</button>
+                    <button class="btn btn-add" style="margin-top:10px; width:100%;" onclick="showNewEntries()">VIEW DATA IN LEDGER</button>
                 `;
                 box.style.borderColor = "var(--accent-green)";
                 box.style.boxShadow = "0 0 40px rgba(0, 255, 102, 0.2)";
             } else if(type === 'empty') {
                 box.innerHTML = `
-                    <h2 style="color: var(--text-muted);"><span style="margin-right:10px;">ℹ</span> NO NEW PENDING</h2>
-                    <p>NO DATA WAS ADDED TO THE SYSTEM.</p>
+                    <h2 style="color: var(--text-muted);"><span style="margin-right:10px;">ℹ</span> NO OPERATION</h2>
+                    <p>NO DATA WAS ADDED/MODIFIED.</p>
                     <button class="btn btn-clear" style="margin-top:10px; width:100%;" onclick="closeCenterNotif()">DISMISS</button>
                 `;
                 box.style.borderColor = "var(--border-bright)";
                 box.style.boxShadow = "none";
             }
             
-            // 3. Auto Dismiss 5 seconds AFTER result is shown
             notifTimeout = setTimeout(() => {
                 closeCenterNotif();
             }, 5000);
             
-        }, 1500); 
+        }, 1200); 
     }
 
     function closeCenterNotif() {
@@ -752,24 +778,20 @@
         closeCenterNotif();
         goToView('ledger');
         
-        // Setup the search bar to visually indicate it is in a filtered state
         const searchInput = document.getElementById('searchInput');
         searchInput.value = '';
-        searchInput.placeholder = "> SHOWING RECENTLY ADDED ONLY. (TYPE TO SEARCH ALL...)";
+        searchInput.placeholder = "> SHOWING RECENTLY MODIFIED ONLY. (TYPE TO SEARCH ALL...)";
 
-        // Filter the table directly by ID to show ONLY newly added records
         const rows = document.querySelector("#dataTable tbody").getElementsByTagName("tr");
         for (let i = 0; i < rows.length; i++) {
-            if (rows[i].cells.length === 1) continue; // Skip empty row text
+            if (rows[i].cells.length === 1) continue; 
             const rowId = rows[i].getAttribute('data-id');
             if (newlyAddedIds.includes(rowId)) {
-                rows[i].style.display = ""; // Show
+                rows[i].style.display = "";
             } else {
-                rows[i].style.display = "none"; // Hide others
+                rows[i].style.display = "none";
             }
         }
-
-        // Scroll gracefully to the ledger section
         document.getElementById('ledgerSection').scrollIntoView({ behavior: 'smooth' });
     }
 
@@ -815,7 +837,6 @@
         }
     }
 
-    // --- INTERACTIVE JUMP TO LEDGER ---
     function jumpToLedger(searchKeyword) {
         closeModal('alertModal');
         closeModal('pendingModal');
@@ -829,7 +850,6 @@
         document.getElementById('ledgerSection').scrollIntoView({ behavior: 'smooth' });
     }
 
-    // --- LIVE CLOCK ---
     function updateClock() {
         const now = new Date();
         const options = { month: 'long', day: 'numeric', year: 'numeric' };
@@ -838,7 +858,6 @@
         document.getElementById('liveClock').innerText = `${datePart} | ${timePart}`;
     }
 
-    // --- THEME MANAGEMENT ---
     function toggleTheme() {
         const body = document.body;
         const btn = document.getElementById('themeBtn');
@@ -936,7 +955,7 @@
     // --- ADVANCED SEARCH / FILTER BARS ---
     function filterLedger() {
         const searchInput = document.getElementById("searchInput");
-        searchInput.placeholder = "> SCAN LEDGER: ENTER PATIENT, ASSET, OR ZONE..."; // Reset placeholder on type
+        searchInput.placeholder = "> SCAN LEDGER: ENTER PATIENT, ASSET, REF/DO OR ZONE..."; 
         const filter = searchInput.value.toUpperCase();
         
         const rows = document.querySelector("#dataTable tbody").getElementsByTagName("tr");
@@ -987,7 +1006,7 @@
         tbody.innerHTML = '';
 
         if (records.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding: 30px;">NO ACTIVE ENTRIES DETECTED.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="12" style="text-align:center; padding: 30px;">NO ACTIVE ENTRIES DETECTED.</td></tr>';
             checkAlertsAndUpdateHUD();
             return;
         }
@@ -1015,24 +1034,34 @@
             let rowClass = "";
 
             const diffDays = getDaysUntilExpiry(rec.glExpiry);
+            const req = parseFloat(rec.quantity) || 0;
+            const rcv = parseFloat(rec.receivedQty) || 0;
+            const bal = req - rcv;
             
+            // Highlight Logics
             if (diffDays !== Infinity) {
-                if (diffDays < 0) {
+                if (diffDays < 0 && bal > 0) {
                     expiryStatusHTML = `<br><span class="alert-tag">EXPIRED</span>`;
                     rowClass = "row-expired";
-                } else if (diffDays <= 15) {
+                } else if (diffDays <= 15 && bal > 0) {
                     expiryStatusHTML = `<br><span class="warning-tag">EXP IN ${diffDays}D</span>`;
                     rowClass = "row-expiring";
                 }
             }
             
+            if (bal <= 0) {
+                rowClass = "row-cleared"; // Greyed out if balance is 0 or less
+                expiryStatusHTML += ` <span class="alert-tag" style="background:var(--accent-green); color:#000;">CLEARED</span>`;
+            }
+            
             if(rowClass) tr.className = rowClass;
             
-            // Add custom data attribute and highlight class for new items
             tr.setAttribute('data-id', rec.id);
-            if(newlyAddedIds.includes(rec.id)) {
+            if(newlyAddedIds.includes(rec.id) && bal > 0) {
                 tr.classList.add("row-new");
             }
+
+            let balStyle = bal <= 0 ? 'color: var(--accent-green); font-size:16px;' : 'color: var(--accent-red); font-size:16px;';
 
             tr.innerHTML = `
                 <td><span class="tag-location">${rec.location}</span></td>
@@ -1041,10 +1070,19 @@
                     ${formatDateForDisplay(rec.glDate)} <br> EXP: ${formatDateForDisplay(rec.glExpiry)} ${expiryStatusHTML}
                 </td>
                 <td>${rec.government}</td>
-                <td><span style="font-weight: bold;">${rec.medicine}</span> <br> <span class="tag-qty">${rec.quantity}</span> <span style="font-size:11px;">${rec.uom}</span></td>
+                <td style="color: var(--accent-gold); font-weight: bold;">${rec.refNo || '--'}</td>
+                <td><strong style="color: var(--text-bright);">${rec.medicine}</strong></td>
+                <td>${req}</td>
+                <td style="color: var(--accent-green); font-weight:bold;">${rcv}</td>
+                <td><strong style="${balStyle}">${bal}</strong></td>
+                <td style="font-size:11px;">${rec.uom}</td>
                 <td>${rec.processedBy}</td>
-                <td style="font-size: 11px; white-space: normal; min-width: 100px;">${rec.remarks || '--'}</td>
-                <td><button class="delete-btn" onclick="deleteData('${rec.id}')">X</button></td>
+                <td>
+                    <div style="display:flex; gap:5px;">
+                        <button class="rcv-btn" title="Receive / Deduct Stock" onclick="openReceiveModal('${rec.id}')">RCV</button>
+                        <button class="delete-btn" title="Delete Entry" onclick="deleteData('${rec.id}')">X</button>
+                    </div>
+                </td>
             `;
             tbody.appendChild(tr);
         });
@@ -1075,10 +1113,15 @@
         const globalMedMap = {};
 
         records.forEach((rec) => {
+            const req = parseFloat(rec.quantity) || 0;
+            const rcv = parseFloat(rec.receivedQty) || 0;
+            const bal = req - rcv;
+            
+            if (bal <= 0) return; // ONLY COUNT PENDING BALANCES
+
             const loc = (rec.location || "").trim().toUpperCase();
             const medName = (rec.medicine || "").trim().toUpperCase();
             const currentUom = (rec.uom || "").trim().toUpperCase();
-            const qty = parseFloat(rec.quantity) || 0;
             
             if (!summaryMap[loc]) summaryMap[loc] = {};
             if (!summaryMap[loc][medName]) {
@@ -1089,7 +1132,7 @@
                     summaryMap[loc][medName].uom += " / " + currentUom;
                 }
             }
-            summaryMap[loc][medName].totalQty += qty;
+            summaryMap[loc][medName].totalQty += bal;
 
             if(!globalMedMap[medName]) {
                 globalMedMap[medName] = { totalQty: 0, uom: currentUom, locations: new Set() };
@@ -1099,9 +1142,17 @@
                     globalMedMap[medName].uom += " / " + currentUom;
                 }
             }
-            globalMedMap[medName].totalQty += qty;
+            globalMedMap[medName].totalQty += bal;
             globalMedMap[medName].locations.add(loc);
         });
+
+        // If no pending balances exist
+        if(Object.keys(summaryMap).length === 0) {
+            locTbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:var(--accent-green);">ALL REQUESTS FULFILLED</td></tr>';
+            globalTbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:var(--accent-green);">ALL REQUESTS FULFILLED</td></tr>';
+            zonesModalTbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:var(--accent-green);">ALL REQUESTS FULFILLED</td></tr>';
+            return;
+        }
 
         // Render Zones Summary (Dashboard & Modal)
         Object.keys(summaryMap).sort().forEach(loc => {
@@ -1110,20 +1161,18 @@
                 const data = summaryMap[loc][med];
                 const locCell = index === 0 ? `<span class="tag-location">${loc}</span>` : `<span style="opacity: 0.1;">"</span>`;
                 
-                // Dash Zone Table Row (Clickable)
                 const trDash = document.createElement('tr');
                 trDash.className = "clickable-row";
                 trDash.title = "CLICK TO VIEW PATIENT DATA IN LEDGER";
                 trDash.onclick = () => jumpToLedger(med);
-                trDash.innerHTML = `<td>${locCell}</td><td><strong>${med}</strong></td><td><span class="tag-qty">${data.totalQty}</span></td><td>${data.uom}</td>`;
+                trDash.innerHTML = `<td>${locCell}</td><td><strong>${med}</strong></td><td><span class="tag-qty" style="color:var(--accent-red);">${data.totalQty}</span></td><td>${data.uom}</td>`;
                 locTbody.appendChild(trDash);
 
-                // Modal Zone Table Row (Clickable)
                 const trMod = document.createElement('tr');
                 trMod.className = "clickable-row";
                 trMod.title = "CLICK TO VIEW PATIENT DATA IN LEDGER";
                 trMod.onclick = () => jumpToLedger(med);
-                trMod.innerHTML = `<td>${locCell}</td><td><strong style="color:var(--accent-cyan);">${med}</strong></td><td><span class="tag-qty" style="font-size:18px;">${data.totalQty}</span></td><td>${data.uom}</td>`;
+                trMod.innerHTML = `<td>${locCell}</td><td><strong style="color:var(--accent-cyan);">${med}</strong></td><td><span class="tag-qty" style="font-size:18px; color:var(--accent-red);">${data.totalQty}</span></td><td>${data.uom}</td>`;
                 zonesModalTbody.appendChild(trMod);
             });
         });
@@ -1135,24 +1184,21 @@
             const locsArr = Array.from(data.locations).sort();
             const locsStr = locsArr.map(l => `<span class="tag-location" style="font-size:9px; padding:2px 4px;">${l}</span>`).join(" ");
             
-            // Global Dash Table Row (Clickable)
             const trGlobal = document.createElement('tr');
             trGlobal.className = "clickable-row";
             trGlobal.title = "CLICK TO VIEW PATIENT DATA IN LEDGER";
             trGlobal.onclick = () => jumpToLedger(med);
-            trGlobal.innerHTML = `<td><strong>${med}</strong></td><td><span class="tag-qty">${data.totalQty}</span></td><td>${data.uom}</td>`;
+            trGlobal.innerHTML = `<td><strong>${med}</strong></td><td><span class="tag-qty" style="color:var(--accent-red);">${data.totalQty}</span></td><td>${data.uom}</td>`;
             globalTbody.appendChild(trGlobal);
 
-            // Global Modal Table Row (Clickable)
             const trModal = document.createElement('tr');
             trModal.className = "clickable-row";
             trModal.title = "CLICK TO VIEW PATIENT DATA IN LEDGER";
             trModal.onclick = () => jumpToLedger(med);
-            trModal.innerHTML = `<td><strong style="color:var(--accent-cyan);">${med}</strong></td><td><span class="tag-qty" style="font-size:18px;">${data.totalQty}</span></td><td>${data.uom}</td><td style="white-space:normal; min-width:150px;">${locsStr}</td>`;
+            trModal.innerHTML = `<td><strong style="color:var(--accent-cyan);">${med}</strong></td><td><span class="tag-qty" style="font-size:18px; color:var(--accent-red);">${data.totalQty}</span></td><td>${data.uom}</td><td style="white-space:normal; min-width:150px;">${locsStr}</td>`;
             modalTbody.appendChild(trModal);
         });
         
-        // Ensure filters run properly if search input is retained during refresh
         filterZoneSummary();
         filterGlobalSummary();
     }
@@ -1162,28 +1208,34 @@
         tbody.innerHTML = '';
         
         let alertCount = 0;
-        let totalAssetQty = 0;
+        let totalPendingAssetQty = 0;
         let activeZonesSet = new Set();
 
         records.forEach(rec => {
-            totalAssetQty += (parseFloat(rec.quantity) || 0);
-            if(rec.location) activeZonesSet.add(rec.location.trim().toUpperCase());
+            const req = parseFloat(rec.quantity) || 0;
+            const rcv = parseFloat(rec.receivedQty) || 0;
+            const bal = req - rcv;
+            
+            if(bal > 0) {
+                totalPendingAssetQty += bal;
+                if(rec.location) activeZonesSet.add(rec.location.trim().toUpperCase());
 
-            const diffDays = getDaysUntilExpiry(rec.glExpiry);
-            if (diffDays !== Infinity && diffDays <= 15) {
-                alertCount++;
-                const tr = document.createElement('tr');
-                tr.className = "clickable-row";
-                tr.title = "CLICK TO VIEW PATIENT DATA IN LEDGER";
-                tr.onclick = () => jumpToLedger(rec.patientName); 
+                const diffDays = getDaysUntilExpiry(rec.glExpiry);
+                if (diffDays !== Infinity && diffDays <= 15) {
+                    alertCount++;
+                    const tr = document.createElement('tr');
+                    tr.className = "clickable-row";
+                    tr.title = "CLICK TO VIEW PATIENT DATA IN LEDGER";
+                    tr.onclick = () => jumpToLedger(rec.patientName); 
 
-                let statHTML = diffDays < 0 ? `<span class="alert-tag">EXPIRED</span>` : `<span class="warning-tag">IN ${diffDays}D</span>`;
-                tr.innerHTML = `<td>${statHTML}</td><td>${rec.patientName}</td><td>${formatDateForDisplay(rec.glExpiry)}</td><td>${rec.medicine}</td><td>${rec.location}</td>`;
-                tbody.appendChild(tr);
+                    let statHTML = diffDays < 0 ? `<span class="alert-tag">EXPIRED</span>` : `<span class="warning-tag">IN ${diffDays}D</span>`;
+                    tr.innerHTML = `<td>${statHTML}</td><td>${rec.patientName}</td><td>${formatDateForDisplay(rec.glExpiry)}</td><td>${rec.medicine}</td><td>${rec.location}</td>`;
+                    tbody.appendChild(tr);
+                }
             }
         });
 
-        document.getElementById('hudTotalQty').innerText = totalAssetQty;
+        document.getElementById('hudTotalQty').innerText = totalPendingAssetQty;
         document.getElementById('hudAlerts').innerText = alertCount;
         document.getElementById('hudZones').innerText = activeZonesSet.size;
     }
@@ -1192,6 +1244,52 @@
     function closeModal(id) { document.getElementById(id).style.display = "none"; }
     window.onclick = function(event) { if (event.target.className === "modal") event.target.style.display = "none"; }
 
+    // --- RECEIVE / DEDUCT FUNCTIONALITY ---
+    function openReceiveModal(id) {
+        currentActionId = id;
+        const rec = records.find(r => r.id === id);
+        if(!rec) return;
+
+        const req = parseFloat(rec.quantity) || 0;
+        const rcv = parseFloat(rec.receivedQty) || 0;
+        const bal = req - rcv;
+
+        document.getElementById('receiveTargetText').innerHTML = `
+            <div style="font-family: var(--font-data); color: var(--text-main); font-size: 14px; line-height:1.5;">
+                PATIENT: <strong style="color:var(--text-bright);">${rec.patientName}</strong><br>
+                ASSET: <strong style="color:var(--accent-cyan);">${rec.medicine}</strong><br>
+                PENDING BALANCE: <strong style="color:var(--accent-red); font-size:18px;">${bal} ${rec.uom}</strong>
+            </div>
+        `;
+        document.getElementById('rcvRefInput').value = rec.refNo || '';
+        document.getElementById('rcvQtyInput').value = '';
+        openModal('receiveModal');
+    }
+
+    function processReceive() {
+        const inputQty = parseFloat(document.getElementById('rcvQtyInput').value);
+        const inputRef = document.getElementById('rcvRefInput').value.trim().toUpperCase();
+        
+        if(!inputQty || isNaN(inputQty) || inputQty <= 0) {
+            alert("SYSTEM HALT: INVALID QUANTITY.");
+            return;
+        }
+        
+        const recIndex = records.findIndex(r => r.id === currentActionId);
+        if(recIndex === -1) return;
+        
+        // Update values
+        records[recIndex].receivedQty = (parseFloat(records[recIndex].receivedQty) || 0) + inputQty;
+        records[recIndex].refNo = inputRef; // Update to the new OR/DO 
+        
+        newlyAddedIds = [records[recIndex].id]; // To highlight row
+        
+        saveData();
+        closeModal('receiveModal');
+        triggerCenterNotif('success', 1, `DEDUCTED ${inputQty} ${records[recIndex].uom} FROM ${records[recIndex].patientName}`);
+    }
+
+    // --- DATA ENTRY ---
     function addData() {
         const patientName = document.getElementById('patientName').value.trim().toUpperCase();
         const glDate = document.getElementById('glDate').value;
@@ -1223,18 +1321,16 @@
         }
 
         const newId = Date.now().toString();
-        // Reset and track the newly added ID
         newlyAddedIds = [newId];
 
         const newRecord = {
             id: newId,
-            patientName, glDate, glExpiry, government, location, processedBy, medicine, quantity, uom, remarks
+            patientName, glDate, glExpiry, government, location, processedBy, refNo: "", medicine, quantity, receivedQty: 0, uom, remarks
         };
 
         records.push(newRecord);
         saveData();
 
-        // Trigger Tactical Center Notification (Success)
         triggerCenterNotif('success', 1, `${patientName} - ${medicine}`);
 
         document.getElementById('patientName').value = '';
@@ -1251,13 +1347,17 @@
         }
     }
 
-    // --- PURGE EXPIRED LOGIC ---
     function purgeExpired() {
         let expiredCount = 0;
         
         const activeRecords = records.filter(rec => {
             const diffDays = getDaysUntilExpiry(rec.glExpiry);
-            if (diffDays < 0) {
+            const req = parseFloat(rec.quantity) || 0;
+            const rcv = parseFloat(rec.receivedQty) || 0;
+            const bal = req - rcv;
+
+            // Only purge expired if balance is still > 0 (Meaning pending and expired)
+            if (diffDays < 0 && bal > 0) {
                 expiredCount++;
                 return false; 
             }
@@ -1265,11 +1365,11 @@
         });
 
         if (expiredCount === 0) {
-            alert("SYSTEM NOTIFICATION: NO EXPIRED RECORDS FOUND.");
+            alert("SYSTEM NOTIFICATION: NO EXPIRED PENDING RECORDS FOUND.");
             return;
         }
 
-        if (confirm(`WARNING: THIS WILL PERMANENTLY DELETE ${expiredCount} EXPIRED RECORD(S).\n\nPROCEED?`)) {
+        if (confirm(`WARNING: THIS WILL PERMANENTLY DELETE ${expiredCount} EXPIRED PENDING RECORD(S).\n\nPROCEED?`)) {
             records = activeRecords;
             saveData();
             alert(`OPERATION SUCCESS: ${expiredCount} EXPIRED RECORD(S) PURGED.`);
@@ -1315,9 +1415,6 @@
             }
 
             let importedCount = 0;
-            let duplicateSkippedCount = 0;
-
-            // Reset newly added ids for the batch import
             newlyAddedIds = [];
 
             jsonData.forEach(row => {
@@ -1326,6 +1423,7 @@
 
                 const pName = cleanRow["PATIENT NAME"] || cleanRow["NAME OF THE PATIENT"] || "";
                 const med = cleanRow["MEDICINE"] || "";
+                const refNo = cleanRow["REF / D.O."] || cleanRow["REFERENCE"] || cleanRow["D.O. NUMBER"] || cleanRow["DO NUMBER"] || "";
                 
                 if (!pName || !med) return;
                 
@@ -1336,7 +1434,9 @@
                 const proc = cleanRow["PROCESSED BY"] || "SYS-IMPORT";
                 const remarks = cleanRow["REMARKS"] || "";
 
-                let rawQty = String(cleanRow["QUANTITY"] || "").trim().toUpperCase();
+                let rawQty = String(cleanRow["REQUESTED QTY"] || cleanRow["QUANTITY"] || "").trim().toUpperCase();
+                let rcvQty = parseFloat(cleanRow["RECEIVED QTY"] || cleanRow["RCVD"]) || 0;
+
                 let finalQty = 0;
                 let finalUom = cleanRow["UOM"] ? String(cleanRow["UOM"]).trim().toUpperCase() : "";
 
@@ -1361,7 +1461,6 @@
                 if (checkDuplicate(pName, parsedGLDate, gov, loc, med)) {
                     const proceed = confirm(`⚠️ EXCEL BATCH IMPORT: DUPLICATE DETECTED!\n\nNasa system na ang record na ito:\n- PATIENT: ${pName}\n- DATE: ${parsedGLDate}\n- GOV: ${gov}\n- MEDICINE: ${med}\n\nGusto mo bang I-SAVE pa rin ito mula sa Excel?\n(Click OK to Add anyway, Cancel to Skip)`);
                     if (!proceed) {
-                        duplicateSkippedCount++;
                         return; 
                     }
                 }
@@ -1378,6 +1477,7 @@
                 records.push({
                     id: newId,
                     patientName: String(pName).trim().toUpperCase(),
+                    refNo: String(refNo).trim().toUpperCase(),
                     glDate: parsedGLDate,
                     glExpiry: parsedExpDate,
                     government: String(gov).trim().toUpperCase(),
@@ -1385,6 +1485,7 @@
                     processedBy: String(proc).trim().toUpperCase(),
                     medicine: String(med).trim().toUpperCase(),
                     quantity: finalQty,
+                    receivedQty: rcvQty,
                     uom: finalUom,
                     remarks: String(remarks).trim().toUpperCase()
                 });
@@ -1412,18 +1513,25 @@
             return a.location.localeCompare(b.location);
         });
 
-        const masterData = sortedRecords.map(rec => ({
-            "AREA / LOCATION": rec.location,
-            "PROCESSED BY": rec.processedBy,
-            "PATIENT NAME": rec.patientName,
-            "DATE OF GL": rec.glDate,
-            "EXPIRATION OF GL": rec.glExpiry,
-            "GOVERNMENT": rec.government,
-            "MEDICINE": rec.medicine,
-            "QUANTITY": rec.quantity,
-            "UOM": rec.uom,
-            "REMARKS": rec.remarks || ""
-        }));
+        const masterData = sortedRecords.map(rec => {
+            const req = parseFloat(rec.quantity) || 0;
+            const rcv = parseFloat(rec.receivedQty) || 0;
+            return {
+                "AREA / LOCATION": rec.location,
+                "PROCESSED BY": rec.processedBy,
+                "PATIENT NAME": rec.patientName,
+                "REF / D.O.": rec.refNo || "",
+                "DATE OF GL": rec.glDate,
+                "EXPIRATION OF GL": rec.glExpiry,
+                "GOVERNMENT": rec.government,
+                "MEDICINE": rec.medicine,
+                "REQUESTED QTY": req,
+                "RECEIVED QTY": rcv,
+                "BALANCE": req - rcv,
+                "UOM": rec.uom,
+                "REMARKS": rec.remarks || ""
+            }
+        });
 
         const summaryArr = [];
         const globalArr = [];
@@ -1431,41 +1539,47 @@
         const globalMap = {};
         
         records.forEach((rec) => {
+            const req = parseFloat(rec.quantity) || 0;
+            const rcv = parseFloat(rec.receivedQty) || 0;
+            const bal = req - rcv;
+            
+            if (bal <= 0) return; // Only export pending balances to summary
+
             const loc = rec.location.trim().toUpperCase();
             const medName = rec.medicine.trim().toUpperCase();
             const currentUom = rec.uom.trim().toUpperCase();
             
             if (!summaryMap[loc]) summaryMap[loc] = {};
-            if (!summaryMap[loc][medName]) summaryMap[loc][medName] = { "MEDICINE": medName, "UOM": currentUom, "TOTAL QTY": 0 };
+            if (!summaryMap[loc][medName]) summaryMap[loc][medName] = { "MEDICINE": medName, "UOM": currentUom, "PENDING BAL": 0 };
             else {
                 let existingUomArray = summaryMap[loc][medName]["UOM"].split(" / ");
                 if (currentUom !== "" && !existingUomArray.includes(currentUom)) summaryMap[loc][medName]["UOM"] += " / " + currentUom;
             }
-            summaryMap[loc][medName]["TOTAL QTY"] += parseFloat(rec.quantity) || 0;
+            summaryMap[loc][medName]["PENDING BAL"] += bal;
 
-            if (!globalMap[medName]) globalMap[medName] = { "MEDICINE": medName, "UOM": currentUom, "TOTAL QTY": 0 };
+            if (!globalMap[medName]) globalMap[medName] = { "MEDICINE": medName, "UOM": currentUom, "PENDING BAL": 0 };
             else {
                 let existingUomArrayG = globalMap[medName]["UOM"].split(" / ");
                 if (currentUom !== "" && !existingUomArrayG.includes(currentUom)) globalMap[medName]["UOM"] += " / " + currentUom;
             }
-            globalMap[medName]["TOTAL QTY"] += parseFloat(rec.quantity) || 0;
+            globalMap[medName]["PENDING BAL"] += bal;
         });
 
         Object.keys(summaryMap).sort().forEach(loc => {
             const meds = Object.values(summaryMap[loc]).sort((a, b) => a["MEDICINE"].localeCompare(b["MEDICINE"]));
             meds.forEach(m => {
-                summaryArr.push({ "AREA / LOCATION": loc, "MEDICINE": m["MEDICINE"], "TOTAL QTY": m["TOTAL QTY"], "UOM": m["UOM"] });
+                summaryArr.push({ "AREA / LOCATION": loc, "MEDICINE": m["MEDICINE"], "PENDING BAL": m["PENDING BAL"], "UOM": m["UOM"] });
             });
         });
 
         Object.values(globalMap).sort((a,b) => a["MEDICINE"].localeCompare(b["MEDICINE"])).forEach(m => {
-            globalArr.push({ "MEDICINE": m["MEDICINE"], "GRAND TOTAL QTY": m["TOTAL QTY"], "UOM": m["UOM"] });
+            globalArr.push({ "MEDICINE": m["MEDICINE"], "GRAND PENDING BAL": m["PENDING BAL"], "UOM": m["UOM"] });
         });
 
         const workbook = XLSX.utils.book_new();
         
         const wsMaster = XLSX.utils.json_to_sheet(masterData);
-        wsMaster['!cols'] = [{wch: 20}, {wch: 20}, {wch: 30}, {wch: 15}, {wch: 15}, {wch: 15}, {wch: 25}, {wch: 10}, {wch: 10}, {wch: 20}];
+        wsMaster['!cols'] = [{wch: 20}, {wch: 20}, {wch: 30}, {wch: 20}, {wch: 15}, {wch: 15}, {wch: 15}, {wch: 25}, {wch: 15}, {wch: 15}, {wch: 15}, {wch: 10}, {wch: 20}];
         XLSX.utils.book_append_sheet(workbook, wsMaster, "Master Ledger");
 
         const wsSummary = XLSX.utils.json_to_sheet(summaryArr);
