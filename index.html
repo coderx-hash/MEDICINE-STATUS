@@ -301,6 +301,9 @@
         .rcv-btn { background-color: transparent; color: var(--accent-green); border: 1px solid var(--accent-green); padding: 4px 8px; border-radius: 2px; cursor: pointer; font-size: 11px; font-weight: bold; transition:0.2s; }
         .rcv-btn:hover { background-color: var(--accent-green); color: black; box-shadow: 0 0 10px var(--accent-green); }
 
+        .edit-btn { background-color: transparent; color: var(--accent-gold); border: 1px solid var(--accent-gold); padding: 4px 8px; border-radius: 2px; cursor: pointer; font-size: 11px; font-weight: bold; transition:0.2s; }
+        .edit-btn:hover { background-color: var(--accent-gold); color: black; box-shadow: 0 0 10px var(--accent-gold); }
+
         /* CLICKABLE ROWS FOR SUMMARIES AND MODALS */
         .clickable-row { cursor: pointer; transition: background 0.2s, outline 0.2s; }
         .clickable-row:hover { background-color: rgba(0, 240, 255, 0.15) !important; outline: 1px solid var(--accent-cyan); }
@@ -437,6 +440,23 @@
             </div>
         </div>
         <button class="btn btn-add" style="width: 100%; margin-top: 15px;" onclick="processReceive()">CONFIRM STOCK ARRIVAL</button>
+    </div>
+</div>
+
+<!-- EDIT EXPIRY MODAL -->
+<div id="editModal" class="modal">
+    <div class="modal-content" style="max-width: 450px; border-color: var(--accent-gold); box-shadow: 0 0 30px rgba(255,184,0,0.2);">
+        <span class="close-btn" onclick="closeModal('editModal')">&times;</span>
+        <div class="card-header"><h2 style="color: var(--accent-gold);">✏️ EDIT EXPIRATION</h2></div>
+        <div style="margin-bottom: 20px; padding: 15px; background: rgba(0,0,0,0.3); border: 1px dashed var(--border-bright);" id="editTargetText"></div>
+        
+        <div class="form-grid" style="grid-template-columns: 1fr;">
+            <div>
+                <label style="color: var(--accent-gold);">NEW EXPIRATION DATE</label>
+                <input type="date" id="editExpInput">
+            </div>
+        </div>
+        <button class="btn btn-purge-exp" style="width: 100%; margin-top: 15px; background-color: var(--accent-gold); color: black;" onclick="processEdit()">SAVE CHANGES</button>
     </div>
 </div>
 
@@ -600,7 +620,9 @@
                     <tr>
                         <th>ZONE</th>
                         <th>PATIENT</th>
-                        <th>LIFESPAN</th>
+                        <th style="cursor: pointer; user-select: none;" onclick="toggleSort()" title="CLICK TO TOGGLE SORT (NEAR TO FAR)">
+                            LIFESPAN <span id="sortIndicator" style="color:var(--accent-gold); font-size:11px;">[NEAR 1ST]</span>
+                        </th>
                         <th>GOV</th>
                         <th>REF / D.O.</th>
                         <th>ASSET</th>
@@ -667,6 +689,8 @@
 <script>
     let newlyAddedIds = [];
     let currentActionId = null; 
+    let currentSort = "EXPIRY_ASC"; // Options: "EXPIRY_ASC", "EXPIRY_DESC"
+    let pendingWorkbook = null; // for countdown export
 
     // --- BOOT UP SEQUENCE & NAVIGATION ---
     function runBootSequence() {
@@ -954,13 +978,11 @@
     function filterLedger() {
         const searchInput = document.getElementById("searchInput");
         searchInput.placeholder = "> SCAN LEDGER: ENTER PATIENT, ASSET, REF/DO OR ZONE..."; 
-        // TINANGGAL ANG SPACE SA SEARCH INPUT PARA MAG MATCH KAHIT IBA ANG SPACING
         const filter = searchInput.value.toUpperCase().replace(/\s+/g, ''); 
         
         const rows = document.querySelector("#dataTable tbody").getElementsByTagName("tr");
         for (let i = 0; i < rows.length; i++) {
             if (rows[i].cells.length === 1) continue; 
-            // TINANGGAL DIN ANG SPACE SA TEXT NG TABLE PARA MA-COMPARE NG MAAYOS
             const text = rows[i].innerText.toUpperCase().replace(/\s+/g, '');
             if (text.includes(filter)) {
                 rows[i].style.display = "";
@@ -1001,6 +1023,15 @@
         return dateObj.toLocaleDateString('en-US', options).toUpperCase();
     }
 
+    function toggleSort() {
+        currentSort = currentSort === "EXPIRY_ASC" ? "EXPIRY_DESC" : "EXPIRY_ASC";
+        const indicator = document.getElementById("sortIndicator");
+        if(indicator) {
+            indicator.innerText = currentSort === "EXPIRY_ASC" ? "[NEAR 1ST]" : "[FAR 1ST]";
+        }
+        renderMasterTable();
+    }
+
     function renderMasterTable() {
         const tbody = document.querySelector('#dataTable tbody');
         tbody.innerHTML = '';
@@ -1012,15 +1043,17 @@
         }
 
         let sortedRecords = [...records].sort((a, b) => {
-            let dateA = new Date(a.glDate).getTime();
-            let dateB = new Date(b.glDate).getTime();
+            let expA = new Date(a.glExpiry).getTime();
+            let expB = new Date(b.glExpiry).getTime();
             
-            if (dateA === dateB || isNaN(dateA) || isNaN(dateB)) {
-                let expA = new Date(a.glExpiry).getTime();
-                let expB = new Date(b.glExpiry).getTime();
-                return expA - expB;
+            if (isNaN(expA)) expA = Infinity;
+            if (isNaN(expB)) expB = Infinity;
+
+            if (currentSort === "EXPIRY_ASC") {
+                return expA - expB; 
+            } else {
+                return expB - expA; 
             }
-            return dateA - dateB;
         });
 
         sortedRecords.forEach((rec) => {
@@ -1074,6 +1107,7 @@
                 <td>
                     <div style="display:flex; gap:5px;">
                         <button class="rcv-btn" title="Receive / Deduct Stock" onclick="openReceiveModal('${rec.id}')">RCV</button>
+                        <button class="edit-btn" title="Edit Expiration" onclick="openEditModal('${rec.id}')">EDIT</button>
                         <button class="delete-btn" title="Delete Entry" onclick="deleteData('${rec.id}')">X</button>
                     </div>
                 </td>
@@ -1116,7 +1150,6 @@
             const loc = (rec.location || "").trim().toUpperCase();
             const rawMedName = (rec.medicine || "").trim().toUpperCase();
             
-            // KEY FIX: TINATANGGAL LAHAT NG SPACES PARA MAG-MERGE (E.G. "150 MG" AT "150MG")
             const medKey = rawMedName.replace(/\s+/g, ''); 
             const currentUom = (rec.uom || "").trim().toUpperCase();
             
@@ -1239,6 +1272,40 @@
     function openModal(id) { document.getElementById(id).style.display = "block"; }
     function closeModal(id) { document.getElementById(id).style.display = "none"; }
     window.onclick = function(event) { if (event.target.className === "modal") event.target.style.display = "none"; }
+
+    // --- EDIT EXPIRY FUNCTIONALITY ---
+    function openEditModal(id) {
+        currentActionId = id;
+        const rec = records.find(r => r.id === id);
+        if(!rec) return;
+
+        document.getElementById('editTargetText').innerHTML = `
+            <div style="font-family: var(--font-data); color: var(--text-main); font-size: 14px; line-height:1.5;">
+                PATIENT: <strong style="color:var(--text-bright);">${rec.patientName}</strong><br>
+                ASSET: <strong style="color:var(--accent-cyan);">${rec.medicine}</strong><br>
+                CURRENT EXP: <strong style="color:var(--accent-red);">${formatDateForDisplay(rec.glExpiry)}</strong>
+            </div>
+        `;
+        document.getElementById('editExpInput').value = rec.glExpiry;
+        openModal('editModal');
+    }
+
+    function processEdit() {
+        const newExp = document.getElementById('editExpInput').value;
+        if(!newExp) {
+            alert("SYSTEM HALT: INVALID DATE.");
+            return;
+        }
+        const recIndex = records.findIndex(r => r.id === currentActionId);
+        if(recIndex === -1) return;
+
+        records[recIndex].glExpiry = newExp;
+        newlyAddedIds = [records[recIndex].id];
+        
+        saveData();
+        closeModal('editModal');
+        triggerCenterNotif('success', 1, `UPDATED EXPIRY DATE FOR ${records[recIndex].patientName}`);
+    }
 
     // --- RECEIVE / DEDUCT FUNCTIONALITY ---
     function openReceiveModal(id) {
@@ -1597,7 +1664,47 @@
         const dateStr = now.toISOString().split('T')[0];
         const timeStr = String(now.getHours()).padStart(2, '0') + String(now.getMinutes()).padStart(2, '0');
         
-        XLSX.writeFile(workbook, `MED_OPS_LOG_${dateStr}_${timeStr}.xlsx`);
+        pendingWorkbook = workbook;
+        let countdown = 3;
+        
+        document.getElementById('centerNotifContainer').style.display = 'flex';
+        const box = document.getElementById('centerNotifBox');
+        
+        box.innerHTML = `
+            <div class="spinner"></div>
+            <h2 style="color: var(--accent-gold); font-size: 40px;">${countdown}</h2>
+            <p style="color: var(--accent-gold);">PREPARING DOWNLOAD EXPORT...</p>
+        `;
+        box.style.borderColor = "var(--accent-gold)";
+        box.style.boxShadow = "0 0 40px rgba(255, 184, 0, 0.2)";
+
+        const timer = setInterval(() => {
+            countdown--;
+            if (countdown > 0) {
+                box.innerHTML = `
+                    <div class="spinner"></div>
+                    <h2 style="color: var(--accent-gold); font-size: 40px;">${countdown}</h2>
+                    <p style="color: var(--accent-gold);">PREPARING DOWNLOAD EXPORT...</p>
+                `;
+            } else {
+                clearInterval(timer);
+                box.innerHTML = `
+                    <h2 style="color: var(--accent-green); font-size: 32px;"><span style="margin-right:10px;">✓</span> READY</h2>
+                    <button class="btn btn-export" style="margin-top:10px; width:100%; font-size: 18px; padding: 15px;" onclick="triggerDownload('${dateStr}', '${timeStr}')">CLICK TO DOWNLOAD NOW</button>
+                    <button class="btn btn-clear" style="margin-top:10px; width:100%;" onclick="closeCenterNotif()">CANCEL</button>
+                `;
+                box.style.borderColor = "var(--accent-green)";
+                box.style.boxShadow = "0 0 40px rgba(0, 255, 102, 0.2)";
+            }
+        }, 1000);
+    }
+
+    function triggerDownload(dateStr, timeStr) {
+        if(pendingWorkbook) {
+            XLSX.writeFile(pendingWorkbook, `MED_OPS_LOG_${dateStr}_${timeStr}.xlsx`);
+            pendingWorkbook = null;
+        }
+        closeCenterNotif();
     }
 
     // INITIALIZATION
