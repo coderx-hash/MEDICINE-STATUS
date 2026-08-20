@@ -499,15 +499,23 @@
 <div id="editModal" class="modal">
     <div class="modal-content" style="max-width: 450px; border-color: var(--accent-gold); box-shadow: 0 0 30px rgba(255,184,0,0.2);">
         <span class="close-btn" onclick="closeModal('editModal')">&times;</span>
-        <div class="card-header"><h2 style="color: var(--accent-gold);">✏️ EDIT EXPIRATION</h2></div>
+        <div class="card-header"><h2 style="color: var(--accent-gold);">✏️ EDIT RECORD</h2></div>
         <div style="margin-bottom: 20px; padding: 15px; background: rgba(0,0,0,0.3); border: 1px dashed var(--border-bright);" id="editTargetText"></div>
-        <div class="form-grid" style="grid-template-columns: 1fr;">
+        <div class="form-grid" style="grid-template-columns: 1fr; margin-bottom: 5px;">
             <div>
                 <label style="color: var(--accent-gold);">NEW EXPIRATION DATE</label>
                 <input type="date" id="editExpInput">
             </div>
+            <div style="margin-top: 10px;">
+                <label style="color: var(--accent-gold);">EDIT ASSET / MEDICINE NAME</label>
+                <input type="text" id="editMedInput" placeholder="e.g. TRASTUMED 150MG" oninput="this.value = this.value.toUpperCase()">
+            </div>
         </div>
-        <button class="btn btn-purge-exp" style="width: 100%; margin-top: 15px; background-color: var(--accent-gold); color: black;" onclick="processEdit()">SAVE CHANGES</button>
+        <div style="border: 1px dashed var(--accent-cyan); padding: 15px; margin-top: 20px; display: flex; align-items: center; gap: 10px; background: rgba(0, 240, 255, 0.05);">
+            <input type="checkbox" id="editApplyAll" style="width: 20px; height: 20px; cursor: pointer; accent-color: var(--accent-cyan);">
+            <label for="editApplyAll" style="color: var(--accent-cyan); margin-bottom: 0; cursor: pointer; font-size: 12px;">APPLY ASSET NAME CHANGE TO ALL MATCHING RECORDS?</label>
+        </div>
+        <button class="btn btn-purge-exp" style="width: 100%; margin-top: 25px; background-color: var(--accent-gold); color: black; border: none;" onclick="processEdit()">SAVE CHANGES</button>
     </div>
 </div>
 
@@ -619,7 +627,11 @@
                 </div>
                 <div>
                     <label>ASSET (MEDICINE w/ DOSAGE)</label>
-                    <input type="text" id="medicine" placeholder="e.g. PARACETAMOL 500MG" oninput="this.value = this.value.toUpperCase()" required>
+                    <div class="input-group">
+                        <select id="medicine"></select>
+                        <button type="button" class="btn-opt" onclick="addCustomOption('medicine', 'medList', 'Enter new Asset/Medicine (w/ Dosage):')">+</button>
+                        <button type="button" class="btn-opt btn-opt-del" onclick="deleteCustomOption('medicine', 'medList')">-</button>
+                    </div>
                 </div>
                 <div>
                     <label>REQUESTED QTY</label>
@@ -751,6 +763,7 @@
     let currentSort = "EXPIRY_ASC";
     let pendingWorkbook = null;
     let isBooted = false; 
+    let currentEditOriginalMed = ""; // Added to track old name for batch edit
 
     // --- FIREBASE AUTHENTICATION LOGIC ---
     auth.onAuthStateChanged((user) => {
@@ -992,13 +1005,15 @@
     const defaultLocs = ["MANILA", "LAGUNA", "BATANGAS", "ALBAY"];
     const defaultGovs = ["OP", "PCSO MAIN"];
     const defaultUoms = ["BOXES", "VIAL", "PCS"];
+    const defaultMeds = ["PARACETAMOL 500MG"];
 
     function initOptions() {
         if(!localStorage.getItem('locList')) localStorage.setItem('locList', JSON.stringify(defaultLocs));
         if(!localStorage.getItem('govList')) localStorage.setItem('govList', JSON.stringify(defaultGovs));
         if(!localStorage.getItem('uomList')) localStorage.setItem('uomList', JSON.stringify(defaultUoms));
+        if(!localStorage.getItem('medList')) localStorage.setItem('medList', JSON.stringify(defaultMeds));
         
-        loadSelect('location', 'locList'); loadSelect('government', 'govList'); loadSelect('uom', 'uomList');
+        loadSelect('location', 'locList'); loadSelect('government', 'govList'); loadSelect('uom', 'uomList'); loadSelect('medicine', 'medList');
     }
 
     function loadSelect(elementId, storageKey) {
@@ -1144,7 +1159,7 @@
                 <td>
                     <div style="display:flex; gap:5px;">
                         <button class="rcv-btn" title="Receive / Deduct Stock" onclick="openReceiveModal('${rec.id}')">RCV</button>
-                        <button class="edit-btn" title="Edit Expiration" onclick="openEditModal('${rec.id}')">EDIT</button>
+                        <button class="edit-btn" title="Edit Record" onclick="openEditModal('${rec.id}')">EDIT</button>
                         <button class="delete-btn" title="Delete Entry" onclick="deleteData('${rec.id}')">X</button>
                     </div>
                 </td>
@@ -1261,25 +1276,70 @@
 
     function openEditModal(id) {
         currentActionId = id; const rec = records.find(r => r.id === id); if(!rec) return;
+        currentEditOriginalMed = rec.medicine;
+        
         document.getElementById('editTargetText').innerHTML = `
             <div style="font-family: var(--font-data); color: var(--text-main); font-size: 14px; line-height:1.5;">
                 PATIENT: <strong style="color:var(--text-bright);">${rec.patientName}</strong><br>
-                ASSET: <strong style="color:var(--accent-cyan);">${rec.medicine}</strong><br>
+                CURRENT ASSET: <strong style="color:var(--accent-cyan);">${rec.medicine}</strong><br>
                 CURRENT EXP: <strong style="color:var(--accent-red);">${formatDateForDisplay(rec.glExpiry)}</strong>
             </div>
         `;
-        document.getElementById('editExpInput').value = rec.glExpiry; openModal('editModal');
+        document.getElementById('editExpInput').value = rec.glExpiry; 
+        document.getElementById('editMedInput').value = rec.medicine;
+        document.getElementById('editApplyAll').checked = false;
+        
+        openModal('editModal');
     }
 
-    function processEdit() {
+    async function processEdit() {
         const newExp = document.getElementById('editExpInput').value;
-        if(!newExp) { alert("SYSTEM HALT: INVALID DATE."); return; }
-        const recIndex = records.findIndex(r => r.id === currentActionId); if(recIndex === -1) return;
+        const newMed = document.getElementById('editMedInput').value.trim().toUpperCase();
+        const applyAll = document.getElementById('editApplyAll').checked;
+        
+        if(!newExp || !newMed) { alert("SYSTEM HALT: INVALID DATE OR ASSET NAME."); return; }
+        
+        const recIndex = records.findIndex(r => r.id === currentActionId); 
+        if(recIndex === -1) return;
 
-        db.collection("med_records").doc(currentActionId).update({ glExpiry: newExp }).then(() => {
-            newlyAddedIds = [currentActionId]; closeModal('editModal');
-            triggerCenterNotif('success', 1, `UPDATED EXPIRY DATE FOR ${records[recIndex].patientName}`);
-        }).catch(err => alert("FIRESTORE ERROR: " + err));
+        try {
+            if (applyAll && newMed !== currentEditOriginalMed) {
+                const batch = db.batch();
+                let updatedCount = 0;
+                
+                records.forEach(r => {
+                    if (r.medicine === currentEditOriginalMed) {
+                        const docRef = db.collection("med_records").doc(r.id);
+                        if (r.id === currentActionId) {
+                            batch.update(docRef, { glExpiry: newExp, medicine: newMed });
+                        } else {
+                            batch.update(docRef, { medicine: newMed });
+                        }
+                        updatedCount++;
+                    }
+                });
+                
+                await batch.commit();
+                
+                let medOpt = JSON.parse(localStorage.getItem('medList'));
+                if(!medOpt.includes(newMed)) { medOpt.push(newMed); localStorage.setItem('medList', JSON.stringify(medOpt)); loadSelect('medicine', 'medList'); }
+
+                newlyAddedIds = [currentActionId]; 
+                closeModal('editModal');
+                triggerCenterNotif('success', updatedCount, `UPDATED ASSET NAME TO ${newMed} GLOBALLY`);
+            } else {
+                await db.collection("med_records").doc(currentActionId).update({ glExpiry: newExp, medicine: newMed });
+                
+                let medOpt = JSON.parse(localStorage.getItem('medList'));
+                if(!medOpt.includes(newMed)) { medOpt.push(newMed); localStorage.setItem('medList', JSON.stringify(medOpt)); loadSelect('medicine', 'medList'); }
+
+                newlyAddedIds = [currentActionId]; 
+                closeModal('editModal');
+                triggerCenterNotif('success', 1, `UPDATED RECORD FOR ${records[recIndex].patientName}`);
+            }
+        } catch (err) {
+            alert("FIRESTORE ERROR: " + err);
+        }
     }
 
     function openReceiveModal(id) {
@@ -1338,7 +1398,7 @@
 
         db.collection("med_records").add(newRecord).then(docRef => {
             newlyAddedIds = [docRef.id]; triggerCenterNotif('success', 1, `${patientName} - ${medicine}`);
-            document.getElementById('patientName').value = ''; document.getElementById('medicine').value = '';
+            document.getElementById('patientName').value = '';
             document.getElementById('quantity').value = ''; document.getElementById('remarks').value = '';
             document.getElementById('patientName').focus();
         }).catch(err => alert("FIRESTORE ERROR: " + err));
@@ -1442,8 +1502,12 @@
 
                 let locOpt = JSON.parse(localStorage.getItem('locList'));
                 if(!locOpt.includes(loc.toUpperCase())) { locOpt.push(loc.toUpperCase()); localStorage.setItem('locList', JSON.stringify(locOpt)); }
+                
                 let uomOpt = JSON.parse(localStorage.getItem('uomList'));
                 if(!uomOpt.includes(finalUom.toUpperCase())) { uomOpt.push(finalUom.toUpperCase()); localStorage.setItem('uomList', JSON.stringify(uomOpt)); }
+
+                let medOpt = JSON.parse(localStorage.getItem('medList'));
+                if(!medOpt.includes(med.toUpperCase())) { medOpt.push(med.toUpperCase()); localStorage.setItem('medList', JSON.stringify(medOpt)); }
 
                 batchRecords.push({
                     patientName: String(pName).trim().toUpperCase(), refNo: String(refNo).trim().toUpperCase(),
@@ -1467,7 +1531,7 @@
                         });
                         await batch.commit();
                     }
-                    loadSelect('location', 'locList'); loadSelect('uom', 'uomList');
+                    loadSelect('location', 'locList'); loadSelect('uom', 'uomList'); loadSelect('medicine', 'medList');
                     triggerCenterNotif('success', importedCount, 'EXCEL BATCH IMPORT');
                 } catch (err) { alert("FIRESTORE BATCH ERROR: " + err); }
             } else { triggerCenterNotif('empty'); }
